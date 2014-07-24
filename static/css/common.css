@@ -1,0 +1,43 @@
+/*
+ * Copyright Adam Pritchard 2014
+ * MIT License : http://adampritchard.mit-license.org/
+ */
+
+.footer {
+  margin-top: 3em;
+}
+
+.form-group .required:after {
+  content: '*';
+  color: red;
+  font-family: 'Glyphicons Halflings';
+  font-weight: normal;
+  vertical-align: middle;
+  font-size: 0.6em;
+}
+
+.breadcrumb {
+  /* Alter the default size to make it more usable on mobile. */
+  font-size: 1.2em;
+}
+
+/*
+ * Fancy checkbox styling
+ */
+
+.checkbox-group,
+.checkbox-text {
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.checkbox-group .input-group-addon,
+.checkbox-text .input-group-addon {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.checkbox-group .input-group-addon i,
+.checkbox-text .input-group-addon i {
+  font-size: 30px;
+}

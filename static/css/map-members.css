@@ -1,0 +1,16 @@
+/*
+ * Copyright Adam Pritchard 2014
+ * MIT License : http://adampritchard.mit-license.org/
+ */
+
+#map-canvas {
+  height: 600px;
+}
+
+.map-buttons {
+  margin-top: 5px;
+}
+
+.map-buttons .btn {
+  margin: 3px;
+}

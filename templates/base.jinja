@@ -1,0 +1,69 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <meta name="description" content="">
+    <title>{% block title %}{% endblock %} - DECA</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.1/normalize.min.css" data-noprefix>
+    <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+    {# <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap-theme.min.css"> #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.4.5/css/bootstrapvalidator.min.css" data-noprefix>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/common.css">
+    {% block pagestyles_file %}{% endblock %}
+
+    <script src="/vendor/modernizr-2.8.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prefixfree/1.0.7/prefixfree.min.js"></script>
+  </head>
+  <body>
+    <noscript>
+      <div class="alert alert-danger" role="alert">
+        JavaScript is required to use this site.
+      </div>
+    </noscript>
+
+    {% block header %}
+      <ol class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li class="active">{{ page_title }}</li>
+      </ol>
+    {% endblock %}
+
+    <div class="content container">
+      {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+      {% block footer %}
+      <div class="footer container">
+        <div class="row ">
+          <div class="col-md-12 text-center">
+            <small>
+              Please report any bugs, problems, or suggestions to
+              <a href="mailto:{{ config.MASTER_EMAIL_ADDRESS }}">the site admin</a>.
+            </small>
+          </div>
+        </div>
+      </div>
+      {% endblock %}
+    </footer>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-2.1.1.min.js"><\/script>')</script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min.js"></script>
+    <script src="/vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.4.5/js/bootstrapvalidator.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timeago/1.4.0/jquery.timeago.min.js"></script>
+
+    <script src="/js/plugins.js"></script>
+    <script src="/js/common.js"></script>
+    {% block pagescript_file %}{% endblock %}
+  </body>
+
+</html>

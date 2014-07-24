@@ -1,0 +1,66 @@
+{% macro wait_modal(create_or_renew) -%}
+  <!-- Modal -->
+  <div id="waitModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="waitModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="waitModalLabel">
+            {% if create_or_renew == 'create' %}
+              Creating new member...
+            {% else %}
+              Renewing and updating member...
+            {% endif %}
+          </h4>
+        </div>
+        <div class="modal-body">
+          <div class="success-hide error-hide reset-show">
+            {% include 'imports/spinner.jinja' %}
+          </div>
+          <div class="success-hide error-show reset-hide conflict-email-hide hidden">
+            <div class="alert alert-danger" role="alert">
+              <p>
+                <strong>Doh!</strong>
+                {% if create_or_renew == 'create' %}
+                  Member creation request failed.
+                {% else %}
+                  Member renewal request failed.
+                {% endif %}
+              </p>
+              <p id="waitModalServerMessage">
+              </p>
+              <p class="hidden retry-show reset-hide">
+                It appears that our server hiccuped. Hit the Retry button and see if it has sorted itself out.
+              </p>
+            </div>
+          </div>
+          <div class="hidden conflict-email-show reset-hide">
+            <div class="alert alert-warning" role="alert">
+              <p>
+                <strong>Duplicate email!</strong>
+                A member with this email address already exists. That means this person is already a member and you should renew them.
+              </p>
+            </div>
+          </div>
+          <div class="success-show error-hide reset-hide hidden">
+            <div class="alert alert-success" role="alert">
+              <strong>Yay!</strong>
+              {% if create_or_renew == 'create' %}
+                New member created successfully.
+              {% else %}
+                Member renewed successfully.
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer success-hide error-show reset-hide hidden">
+          <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+          <button id="waitModalRetry" type="button" class="btn btn-primary btn-lg hidden retry-show reset-hide">Retry</button>
+          <a id="waitModalRenew" href="/renew-member" class="btn btn-primary btn-lg hidden conflict-email-show reset-hide" role="button">Renew Member</a>
+        </div>
+        <div class="modal-footer success-show error-hide reset-hide hidden">
+          <a href="/" class="btn btn-primary btn-lg" role="button">Done!</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}

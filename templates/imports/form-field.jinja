@@ -1,0 +1,18 @@
+{% macro input(field, type='text', placeholder='', value='',
+               attrs='', autocomplete='off') -%}
+  <div class="form-group">
+    <label for="{{field.name}}"
+           class="control-label {{ 'required' if field.required else '' }}">
+      {{field.title}}
+    </label>
+    <input name="{{field.name}}"
+           type="{{type}}"
+           class="form-control input-lg"
+           value="{{value}}"
+           placeholder="{{placeholder}}"
+           autocomplete="{{ autocomplete }}"
+           {{ ('autocapitalize="on"' if type=='text' else '')|safe }}
+           {{ ('required="required"' if field.required else '')|safe }}
+           {{ attrs|safe }}/>
+  </div>
+{%- endmacro %}

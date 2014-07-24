@@ -1,0 +1,72 @@
+{% extends "base.jinja" %}
+
+{% set page_title = 'Member Management' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{# Get rid of the header on this page #}
+{% block header %}{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+  <h1>DECA Member Management</h1>
+
+  {% if user %}
+    <p>
+      Welcome, {{ user.email() }}.
+    </p>
+    <p>
+      (Not the right account? <a href="{{ logout_url|safe }}">Sign out.</a>)
+    </p>
+  {% else %}
+    <p>
+      Expect to have to log in with a Google account before proceeding.
+    </p>
+  {% endif %}
+
+  <hr>
+
+  <div class="row">
+    <div class="col-sm-offset-3 col-sm-6">
+      <p class="btn-group btn-group-justified">
+        <a href="/new-member" class="btn btn-primary btn-lg" role="button">Register New Member</a>
+      </p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-offset-3 col-sm-6">
+      <p class="btn-group btn-group-justified">
+        <a href="/renew-member" class="btn btn-primary btn-lg" role="button">Renew Existing Member</a>
+      </p>
+    </div>
+  </div>
+
+  <hr>
+
+  <p>
+    If a new user needs authorization to operate this website, add them here:
+  </p>
+  <div class="row">
+    <div class="col-sm-offset-3 col-sm-6">
+      <p class="btn-group btn-group-justified">
+        <a href="/authorize-user" class="btn btn-primary btn-lg" role="button">Authorize New User</a>
+      </p>
+    </div>
+  </div>
+
+  <hr>
+
+  <p>
+    See where DECA members are (and aren't):
+  </p>
+  <div class="row">
+    <div class="col-sm-offset-3 col-sm-6">
+      <p class="btn-group btn-group-justified">
+        <a href="/map-members" class="btn btn-primary btn-lg" role="button">View Members Map</a>
+      </p>
+    </div>
+  </div>
+
+</div><!-- jumbotron -->
+
+{% endblock %}

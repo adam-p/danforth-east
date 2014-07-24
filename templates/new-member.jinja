@@ -1,0 +1,27 @@
+{% extends "base.jinja" %}
+
+{% set page_title = 'Create New Member' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1>{{ page_title }} <small class="hidden-xs">Welcome to DECA!</small></h1>
+</div>
+
+{% import 'imports/member-form.jinja' as member_form %}
+
+<form id="newMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
+
+  {{ member_form.member_form('create', FIELDS, csrf, volunteer_interests) }}
+
+  <button id="submitNewMember" type="submit" class="btn btn-lg btn-primary">Join DECA!</button>
+
+</form>
+
+{% endblock content %}
+
+{% block pagescript_file %}
+<script src="/js/new-member.js"></script>
+{% endblock %}

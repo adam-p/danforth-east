@@ -1,3 +1,14 @@
+# Don't put our keys in source control!
+*.pem
+*.p12
+
+# Also don't put our private config values in source control
+private.py
+
+*.DS_Store
+bower_components
+node_modules
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,0 +1,14 @@
+cron:
+- description: Cull defunct members from members sheet
+  url: /tasks/member-sheet-cull
+  schedule: every day 02:00
+  timezone: America/Toronto
+
+- description: Archive last years sheet
+  url: /tasks/member-sheet-archive
+  schedule: 1 of month 01:00
+
+- description: Delete expired member candidates from NDB
+  url: /self-serve/expire-member-candidates
+  schedule: every day 02:00
+  timezone: America/Toronto

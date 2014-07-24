@@ -1,0 +1,108 @@
+{% extends "base.jinja" %}
+
+{% set page_title = 'Renew Member' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1>{{ page_title }} <small class="hidden-xs">Welcome to DECA!</small></h1>
+</div>
+
+<script id="membersListItemTemplate" type="text/template">
+  <a href="#" class="list-group-item member-item">
+    <input type="hidden" name="_idx" value="<%- data.member._idx %>">
+    <h5 class="list-group-item-heading search-text">
+      <%- data.member[data.fields.first_name.name] %> <%- data.member[data.fields.last_name.name] %>
+      <small class=""><%- data.member[data.fields.email.name] %></small>
+    </h5>
+    <div class="row list-group-item-text">
+      <div class="col-sm-6">
+        <small>
+          <% if (data.member[data.fields.family_names.name]) { %>
+            Family:
+            <span class="search-text">
+              <%- data.member[data.fields.family_names.name] %>
+            </span>
+          <% } %>
+        </small>
+      </div>
+      <div class="col-sm-6">
+          <%if (data.member[data.fields.renewed.name]) { %>
+            Last renewed
+            <abbr class="timeago" title="<%- data.member[data.fields.renewed.name] %>">
+              <%- data.member[data.fields.renewed.name] %>
+            </abbr>
+          <% } else { %>
+            No last renewed date
+          <% } %>
+      </div>
+    </div>
+  </a>
+</script>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <input id="membersFilter"
+               type="text"
+               class="form-control input-lg"
+               placeholder="Loading members list..."
+               autofocus="on"
+               disabled>
+      </div>
+      <div class="panel-body">
+        <div id="membersListNoMatch" class="hidden text-center alert alert-warning" role="alert">
+          <p>
+            No matching members!
+          </p>
+          <p>
+            <a href="/new-member" class="btn btn-primary btn-lg" role="button">Register New Member</a>
+          </p>
+        </div>
+
+        <div id="membersList" class="list-group">
+          <div id="membersListLoadSpinner" class="text-center">
+            <i class="fa fa-spinner fa-spin"></i>
+          </div>
+          <!-- templated list here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+{% import 'imports/member-form.jinja' as member_form %}
+
+<div id="reviewRenew" class="invisible">
+
+  <h2>Review and Renew</h2>
+
+  <form id="renewMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
+
+    {{ member_form.member_form('renew', FIELDS, csrf, volunteer_interests) }}
+
+    <button id="submitRenewMember" type="submit" class="btn btn-lg btn-primary">Renew DECA membership!</button>
+
+  </form>
+
+</div>
+
+<div id="reviewRenewPlaceholder">
+  <div><i class="fa fa-arrow-up"></i></div>
+  <div>Scroll to the top</div>
+</div>
+
+{% endblock content %}
+
+{% block pagestyles_file %}
+<link rel="stylesheet" href="/css/renew-member.css">
+{% endblock %}
+
+{% block pagescript_file %}
+<script src="/js/renew-member.js"></script>
+{% endblock %}

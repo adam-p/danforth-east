@@ -1,0 +1,13 @@
+# This requirements file lists all third-party dependencies for this project.
+#
+# Run 'pip install -r requirements.txt -t lib/' to install these dependencies
+# in `lib/` subdirectory.
+#
+# Note: The `lib` directory is added to `sys.path` by `appengine_config.py`.
+gdata==2.0.18
+google-api-python-client==1.2
+httplib2==0.9
+pytz==2014.4
+python-dateutil==2.2
+html2text==2014.7.3
+geopy==0.99

@@ -1,0 +1,19 @@
+{% extends "base.jinja" %}
+
+{% set page_title = 'Unauthorized user' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ page_title }}</h1>
+
+    <p>
+      You are currently logged in as <code>{{ user.email() }}</code>
+    </p>
+    <p>
+      This user has not been authorized to access the DECA membership management functions. Please contact a DECA administrator to be given access.
+    </p>
+    <p>
+      If you are logged in as the wrong user, you may <a href="{{ logout_url|safe }}">sign out</a>.
+    </p>
+{% endblock %}

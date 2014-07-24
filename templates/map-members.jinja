@@ -1,0 +1,78 @@
+{% extends "base.jinja" %}
+
+{% set page_title = 'DECA Members Map' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1>{{ page_title }}</h1>
+  <p>
+    Where are we?!?
+  </p>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div id="map-canvas"></div>
+  </div>
+</div>
+
+<div class="row map-buttons">
+  <div class="col-sm-12 text-center">
+    <button id="toggleHeatmap" type="button" class="btn btn-primary">Toggle Heatmap</button>
+    <button id="changeGradient" type="button" class="heatmap-btn btn btn-success">Change Gradient</button>
+    <button id="changeRadius" type="button" class="heatmap-btn btn btn-info">Change Radius</button>
+    <button id="changeOpacity" type="button" class="heatmap-btn btn btn-warning">Change Opacity</button>
+  </div>
+</div>
+
+<div id="loadSpinner">
+  {% include 'imports/spinner.jinja' %}
+</div>
+
+<script id="memberInfoTemplate" type="text/template">
+  <strong>
+    <%- data.member[data.fields.first_name.name] %> <%- data.member[data.fields.last_name.name] %>
+  </strong>
+  <br>
+  <%- data.member[data.fields.street_num.name] %>
+  <%- data.member[data.fields.street_name.name] %>
+</script>
+
+<hr>
+
+<div class="row">
+  <div class="col-md-12 alert alert-warning" role="alert">
+    <p>
+      There are <strong id="membersNotShowing">(loading...)</strong> members not shown on the map because of insufficient address information or problems converting their addresses to map coordinates.
+    </p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 alert alert-info" role="alert">
+    <p>
+      <strong>TODO:</strong> What are the official bounds of DECA's operating area? We could draw a box (polygon) around that area on the map.
+    </p>
+    <p>
+      <strong>TODO:</strong> Decide whether map should start zoomed out enough to include all members, or only zoomed to include Danforth East proper.
+    </p>
+    <p>
+      <strong>TODO:</strong> Add join and renew locations to map. Use different heat map colours and marker (maybe "J" and "R" for markers). Add buttons to show hide the different data sets. Add note that there's not much data yet.
+    </p>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block pagestyles_file %}
+<link rel="stylesheet" href="/css/map-members.css">
+{% endblock %}
+
+{% block pagescript_file %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_BROWSER_API_KEY }}&libraries=visualization"></script>
+<script src="/js/map-members.js"></script>
+{% endblock %}

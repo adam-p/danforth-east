@@ -1,0 +1,69 @@
+# -*- coding: utf-8 -*-
+
+"""Configuration values that we don't want to check into source control.
+"""
+
+#
+# Copyright Adam Pritchard 2014
+# MIT License : http://adampritchard.mit-license.org/
+#
+
+MASTER_EMAIL_ADDRESS = 'your-gmail-account@gmail.com'
+MASTER_EMAIL_SEND_ADDRESS = 'Your Neighbourhood Community Association <%s>' % (MASTER_EMAIL_ADDRESS,)
+
+# Set this to None to allow sending to all addresses
+ALLOWED_EMAIL_TO_ADDRESSES = ['your-email@gmail.com',
+                              'another-tester@hotmail.com',
+                              ]
+
+# This isn't actually used at this time.
+ALLOWED_EMBED_REFERERS = ['site-that-will-embed-form.com',
+                          ]
+
+# If your GAE app is at "myapp.appspot.com", then you can set up these creds at:
+# https://console.developers.google.com/project/apps~myapp/apiui/credential
+# You need one each of service account (used for spreadsheets API calls), server
+# API key (used for geocoding API calls), and browser API key (used for maps
+# API calls).
+# You'll need to convert the P12 service account key to PEM format. I think the
+# command is something like this:
+# $ openssl pkcs12 -in key.p12 -out key.pem -nodes -clcerts
+SERVICE_ACCOUNT_PEM_FILE_PATH = 'privatekey.pem'
+SERVICE_ACCOUNT_EMAIL = '1234-blah-abcd@developer.gserviceaccount.com'
+GOOGLE_SERVER_API_KEY = 'abc123'
+GOOGLE_BROWSER_API_KEY = 'xyz789'
+
+
+#
+# Payment and PayPal info
+#
+
+# This is the URL that we'll send the user to so they can pay.
+# You get this URL when you use the Paypal web interface to create a payment
+# button. (We don't actually use the button <form>.)
+# NOTE: When testing, make sure this is www.sandbox.paypal.com!
+PAYPAL_PAYMENT_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ABC123'
+PAYPAL_PAYMENT_URL += '&invoice=%s'
+# When testing, this will probably be "youremail-facilitator@gmail.com"
+PAYPAL_TXN_receiver_email = 'youremail@gmail.com'
+# We'll accept Canadian or US currency -- they're pretty close.
+PAYPAL_TXN_mc_currency_SET = ('CAD', 'USD')
+# Membership is $10/year
+PAYPAL_TXN_mc_gross_FLOAT = 10.00
+
+
+#
+# Spreadsheet keys
+#
+# Note: Figuring out the key for the first worksheet is a hassle (unlike the
+# spreadsheet key it's not shown in the URL). You can our
+# gapps._get_first_worksheet_id() function to help.
+
+MEMBERS_SPREADSHEET_KEY = 'abc123'
+MEMBERS_WORKSHEET_KEY = 'abc123'
+
+AUTHORIZED_SPREADSHEET_KEY = 'abc123'
+AUTHORIZED_WORKSHEET_KEY = 'abc123'
+
+VOLUNTEER_SPREADSHEET_KEY = 'abc123'
+VOLUNTEER_WORKSHEET_KEY = 'abc123'

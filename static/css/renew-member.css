@@ -1,0 +1,25 @@
+/*
+ * Copyright Adam Pritchard 2014
+ * MIT License : http://adampritchard.mit-license.org/
+ */
+
+#membersList {
+  max-height: 20em;
+  overflow-y: scroll;
+  margin-bottom: 0;
+}
+
+#membersListLoadSpinner {
+  font-size: 5em;
+}
+
+#reviewRenewPlaceholder {
+  position: absolute;
+  padding-left: 40%;
+  margin-top: -120px;
+  opacity: 0.5;
+}
+
+#reviewRenewPlaceholder i {
+  font-size: 100px;
+}
