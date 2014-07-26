@@ -11,7 +11,8 @@
 MASTER_EMAIL_ADDRESS = 'your-gmail-account@gmail.com'
 MASTER_EMAIL_SEND_ADDRESS = 'Your Neighbourhood Community Association <%s>' % (MASTER_EMAIL_ADDRESS,)
 
-# Set this to None to allow sending to all addresses
+# Set this to None to allow sending to all addresses. Set to empty list to
+# prevent sending to any address.
 ALLOWED_EMAIL_TO_ADDRESSES = ['your-email@gmail.com',
                               'another-tester@hotmail.com',
                               ]

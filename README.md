@@ -122,7 +122,7 @@ When that is complete, click on the "Enable an API" button, or "APIs & Auth/APIs
 
 Click on "Credentials" in the left sidebar. Click on "Create new Client ID", then "Service account", then "Create Client ID". A JSON file with the new credentials and key will download. Save the contents of the `private_key` field to a file named `privatekey.pem` in the root of your source directory (replacing `\n` with actual newlines). Copy the `client_email` value and set as `SERVICE_ACCOUNT_EMAIL` in `private.py`.
 
-[Note: I think there's a default service account for the GAE project, but I couldn't figure out how to use it.]
+[Note: I think there's a default service account for the GAE project, but I couldn't figure out how to get the key for it. Maybe instead you generate and upload its key?]
 
 Under "Public API access" click on "Create new Key". Click on "Server key". Leave the IP address field blank (for now). Copy the new "API Key" and set as `GOOGLE_SERVER_API_KEY` in `private.py`.
 
@@ -210,13 +210,19 @@ Note that if you test the entire self-serve workflow -- including PayPal -- loca
 
 There are occurences of branding in files that aren't yet properly parameterized, so you should search for "deca" or "danforth" in source files for strings you should change for your own organization.
 
-Replace the contents of `templates/tasks/email-*` files to match your community organization.
+* Replace the contents of `templates/tasks/email-*` files to match your community organization.
 
-Change the timezone in `cron.yaml` and `config/__init__.py` to your own. List of [possible timezones here](http://en.wikipedia.org/wiki/List_of_zoneinfo_time_zones).
+* Change the timezone in `cron.yaml` and `config/__init__.py` to your own. List of [possible timezones here](http://en.wikipedia.org/wiki/List_of_zoneinfo_time_zones).
 
-You might want to change "Postal Code" to your local equivalent.
+* You might want to change "Postal Code" to your local equivalent.
 
-If your heathen country uses "check" instead of "cheque", I... I just don't know.
+* The member form has a "Toronto" default value for city.
+
+* The member form has a Toronto-ish placeholder for postal code.
+
+* If you don't have a farmers' market in your neighbourhood, you'll probably want to change or remove that option.
+
+* If your heathen country uses "check" instead of "cheque", I... I just don't know.
 
 
 Production steps
@@ -352,7 +358,9 @@ Future work
 * `/renew-member`: Add "member since" and "last renewed" to the member renew form. (The latter is kind of there now, but not visible enough.)
 
 
-### Technical 
+### Technical
+
+* Put the contents of `privatekey.pem` into `private.py` instead of reading from a file.
 
 * Self-serve: Limit non-PayPal sign-ups per day.
   - There isn't yet a "mail in a cheque" option on the self-serve registration, but there probably will be (since there was on the original site). That option removes the money-gate of the PayPal option and introduces the possibility of someone spamming the form and filling the spreadsheet with crap.

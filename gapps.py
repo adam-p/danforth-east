@@ -281,7 +281,7 @@ def send_email(to_address, to_name, subject, body_html):
     Does not check for address validity.
     """
 
-    if config.ALLOWED_EMAIL_TO_ADDRESSES and \
+    if config.ALLOWED_EMAIL_TO_ADDRESSES is not None and \
        to_address not in config.ALLOWED_EMAIL_TO_ADDRESSES:
         # Not allowed to send to this address
         logging.info('send_email: not allowed to send to: %s' % to_address)
