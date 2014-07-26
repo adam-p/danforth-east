@@ -309,6 +309,10 @@ When a member's last renewal is two years in the past (that is, they're a year e
 
 (Technical note: the amount of time before a defunct member is culled is not well parameterized. See `gapps.cull_members_sheet()`.)
 
+### And more!
+
+Rather than making this README longer than it already is, I'm going to document some features and details in [the wiki](https://github.com/adam-p/danforth-east/wiki).
+
 
 Future work
 -----------
@@ -347,10 +351,6 @@ Future work
 
 * `/renew-member`: Add "member since" and "last renewed" to the member renew form. (The latter is kind of there now, but not visible enough.)
 
-* `/new-member`: Start duplicate email check when focus leaves the field, rather than on submit?
-
-* Re-think `/renew-member`. Maybe it should just flow from `/new-member`, the same way the self-serve stuff detects a renewal.
-
 
 ### Technical 
 
@@ -363,6 +363,7 @@ Future work
 * Modify `helpers.BaseHandler` (create a subclass, probably) so that `post()` always does CSRF.
 
 * Create a subclass of `helpers.BaseHandler` to always do user-logged-in checks. (Maybe same subclass as CSRF checks.)
+  - Remember that `@check_login` can only be used for `get()`.
 
 * Styling and imagery -- both for customization and handsomeness and usability. Right now it's default Bootstrap. It's even using the HTML5BP favicon.
   - Keep in mind that the self-serve form needs to match embedding site.

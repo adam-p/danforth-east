@@ -5,6 +5,8 @@
 # Also don't put our private config values in source control
 private.py
 
+iframe-test-custom.html
+
 bower_components
 node_modules
 

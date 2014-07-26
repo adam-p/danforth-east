@@ -74,7 +74,6 @@ class NewMemberPage(helpers.BaseHandler):
         self.response.set_cookie('csrf', csrf, path=self.request.path)
         self.response.write(template.render(template_values))
 
-    @login_required
     def post(self):
         """Create the new member.
         '409 Conflict' is thrown if the email address is already associated
@@ -125,7 +124,6 @@ class RenewMemberPage(helpers.BaseHandler):
         self.response.set_cookie('csrf', csrf, path=self.request.path)
         self.response.write(template.render(template_values))
 
-    @login_required
     def post(self):
         helpers.check_csrf(self.request)
 
@@ -204,7 +202,6 @@ class AuthorizeUserPage(helpers.BaseHandler):
         self.response.set_cookie('csrf', csrf, path=self.request.path)
         self.response.write(template.render(template_values))
 
-    @login_required
     def post(self):
         helpers.check_csrf(self.request)
 

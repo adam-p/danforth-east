@@ -41,3 +41,8 @@
 .checkbox-text .input-group-addon i {
   font-size: 30px;
 }
+
+.checkbox-group .form-control,
+.checkbox-text .form-control {
+  display: inline-table;
+}
