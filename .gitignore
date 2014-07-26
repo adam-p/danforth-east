@@ -5,9 +5,17 @@
 # Also don't put our private config values in source control
 private.py
 
-*.DS_Store
 bower_components
 node_modules
+
+# OS generated files
+.DS_Store
+.DS_Store?
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+desktop.ini
+Thumbs.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

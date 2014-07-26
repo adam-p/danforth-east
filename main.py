@@ -74,6 +74,7 @@ class NewMemberPage(helpers.BaseHandler):
         self.response.set_cookie('csrf', csrf, path=self.request.path)
         self.response.write(template.render(template_values))
 
+    @login_required
     def post(self):
         """Create the new member.
         '409 Conflict' is thrown if the email address is already associated
@@ -124,6 +125,7 @@ class RenewMemberPage(helpers.BaseHandler):
         self.response.set_cookie('csrf', csrf, path=self.request.path)
         self.response.write(template.render(template_values))
 
+    @login_required
     def post(self):
         helpers.check_csrf(self.request)
 
@@ -147,7 +149,6 @@ class BadUserPage(helpers.BaseHandler):
 
     def get(self):
         user = users.get_current_user()
-
         if not user:
             self.redirect('/')
             return
@@ -166,8 +167,6 @@ class AllMembersJson(helpers.BaseHandler):
     # @login_required -- Not using this decorator, since this isn't a web page.
     # Instead we'll check login state in logic and return an error code.
     def get(self):
-        user = users.get_current_user()
-
         user = users.get_current_user()
         if not user or not gapps.is_user_authorized(user):
             detail = 'user not authorized' if user else 'user not logged in'
@@ -205,6 +204,7 @@ class AuthorizeUserPage(helpers.BaseHandler):
         self.response.set_cookie('csrf', csrf, path=self.request.path)
         self.response.write(template.render(template_values))
 
+    @login_required
     def post(self):
         helpers.check_csrf(self.request)
 

@@ -22,7 +22,7 @@ if not DEBUG:
 SCOPE = ['https://spreadsheets.google.com/feeds/',
          'https://www.googleapis.com/auth/drive']
 
-TIMEZONE = 'US/Eastern'
+TIMEZONE = 'America/Toronto'
 
 # This is repeated in static/js/common.js
 # TODO: Get rid of this duplication. Maybe run our JS files through jinja

@@ -17,6 +17,8 @@ from google.appengine.api import mail
 import pytz
 import dateutil.parser
 
+import config
+
 
 _no_spaces_re = re.compile('[^\w]')
 
@@ -82,7 +84,7 @@ def latlong_validator(val, required):
 def current_datetime():
     """Returns string of current datetime.
     """
-    return datetime.datetime.now(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d %H:%M:%S')
+    return datetime.datetime.now(pytz.timezone(config.TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def days_ago(datestring):

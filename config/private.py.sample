@@ -25,8 +25,8 @@ ALLOWED_EMBED_REFERERS = ['site-that-will-embed-form.com',
 # You need one each of service account (used for spreadsheets API calls), server
 # API key (used for geocoding API calls), and browser API key (used for maps
 # API calls).
-# You'll need to convert the P12 service account key to PEM format. I think the
-# command is something like this:
+# If you get a service account key in P12 format, you'll need to convert it to
+# PEM format. I think the command is something like this:
 # $ openssl pkcs12 -in key.p12 -out key.pem -nodes -clcerts
 SERVICE_ACCOUNT_PEM_FILE_PATH = 'privatekey.pem'
 SERVICE_ACCOUNT_EMAIL = '1234-blah-abcd@developer.gserviceaccount.com'
@@ -60,10 +60,10 @@ PAYPAL_TXN_mc_gross_FLOAT = 10.00
 # gapps._get_first_worksheet_id() function to help.
 
 MEMBERS_SPREADSHEET_KEY = 'abc123'
-MEMBERS_WORKSHEET_KEY = 'abc123'
+MEMBERS_WORKSHEET_KEY = 'od6'
 
 AUTHORIZED_SPREADSHEET_KEY = 'abc123'
-AUTHORIZED_WORKSHEET_KEY = 'abc123'
+AUTHORIZED_WORKSHEET_KEY = 'od6'
 
 VOLUNTEER_SPREADSHEET_KEY = 'abc123'
-VOLUNTEER_WORKSHEET_KEY = 'abc123'
+VOLUNTEER_WORKSHEET_KEY = 'od6'
