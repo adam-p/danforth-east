@@ -15,7 +15,7 @@ This is a Google App Engine application (and web interface) written for my neigh
 Introduction
 ------------
 
-The [Danforth East Community Association](http://danfortheastcommunityassociation.com/) asked me to help update their ("our", I guess) membership management system. They had been using a pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
+The [Danforth East Community Association](http://danfortheastcommunityassociation.com/) asked me to help update their ("our", I guess) membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
 
 The requirements were/are something like:
 
@@ -35,7 +35,7 @@ And some self-imposed requirements:
 
 I looked into existing solutions and didn't find much. [CiviCRM](https://civicrm.org/) is very interesting, but it seemed like overkill, and it seemed like a lot of learning and training. (Of course, in retrospect, it would have been less work to do the learning and training.)
 
-I decided early on that a Google Spreadsheets-centric approach would be good. The spreadsheet could be shared among the association manager and people are pretty comfortable with spreadsheets. I fooled around with Google Apps Script-based approaches, but I found frustrating and limiting: because it's Caja-sandboxed, debugging and developing are painful and slow, and deployment options are limited, and there are limitations in what you can get done in it. Google Apps Script is very cool and easy for small tasks, but creating a multi-faceted web-based UI with future flexibility seemed like it wasn't going to work out.
+I decided early on that a Google Spreadsheets-centric approach would be good. The spreadsheet could be shared among the association manager and people are pretty comfortable with spreadsheets. I fooled around with Google Apps Script-based approaches, but I found them frustrating and limiting: because of the [Caja](https://code.google.com/p/google-caja/) sandboxing, debugging and developing are painful and slow, and deployment options are limited, and there are limitations in what you can get done in it. Google Apps Script is very cool and easy for small tasks, but creating a multi-faceted web-based UI with future flexibility seemed like it wasn't going to work out.
 
 So I settled on using Google App Engine (GAE), with Google Spreadsheets as the database.
 
@@ -51,7 +51,7 @@ On the back end, there's some fairly simple [CRUD](http://en.wikipedia.org/wiki/
 
 I wanted the "database" to be human readable/understandable/exportable/manipulable. People seem pretty comfortable with spreadsheets (the old membership list was kept in one). Some experimentation showed that the speed of accessing spreadsheet data with every request was acceptable (for the size of data in question), and I figured I could add caching of the data (on either or both of the server or client) if needed.
 
-So here's a rough flow of what happens when user is directly registered by an association manager:
+So here is a rough flow of what happens when a member is directly registered by an association manager:
 
 1. Manager requests the `/new-member` page.
 2. Server fetches authorization spreadsheet and checks that the manager's email address is in it.
@@ -247,6 +247,7 @@ This system is designed to be easy for the organization managers to use. That be
   - If you need to rename a column, talk to the dev first.
   - It's fine to re-order columns or add new columns.
 
+* In the "Authorization" spreadsheet, the "Email" values must be the "real" (canonical) forms. For example, if you log into Gmail with "my.name@gmail.com" then that's the value that must be in the Authorization spreadsheet -- you can't use "my.name+stuff@gmail.com" or the like.
 
 ### Instructions to organization admins
 
