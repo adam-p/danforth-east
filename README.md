@@ -4,13 +4,27 @@ Neighbourhood Community Association Membership Management
 Sales Pitch
 -----------
 
-Have you been shanghaied into helping a local organization register, renew, and keep track of members? Me too! This system can be run for free on Google App Engine and uses Google Spreadsheets as its database. It's easy for organization managers and members, mostly self-maintaining (for your sanity), and pretty flexible and powerful (for when you inevitably get roped into adding new features).
+Have you agreed to help a local organization register, renew, and keep track of members -- and then realized it's more work than you expected? Me too! This system can be run for free on Google App Engine and uses Google Spreadsheets as its database. It's easy for organization managers and members, mostly self-maintaining (for your sanity), and pretty flexible and powerful (for when you inevitably get asked to add new features).
 
 
 Overview
 --------
 
 This is a Google App Engine application (and web interface) written for my neighbourhood community association to help register and keep track of its few hundred members. It's largely bespoke -- it could certainly be adapted to a different organization, but it's not (yet) cleanly parameterized. It uses Google Spreadsheets as the database, which might be somewhat novel, and might be of use to someone.
+
+Demo
+----
+
+The demo management site is located at: https://mmbrmgmt.appspot.com
+
+The demo form-embedded-in-organization-website page is located at: https://s3.amazonaws.com/mmbrmgmt/iframe-test-custom.html
+
+The spreadsheets acting as the "database" for this demo are:
+
+* [Members](https://docs.google.com/spreadsheets/d/1CEC4cAoA4SoVZQ-trkFzy6Mi5tL42vuyWyMIts3hMQ8/edit?usp=sharing)
+* [Volunteer Interest Areas](https://docs.google.com/spreadsheets/d/1NRMFHCF_9dEyizfdO2vxWXUNojLYNVc5uwFOGCHp6iA/edit?usp=sharing)
+* [Authorized Users](https://docs.google.com/spreadsheets/d/19eGfHsDx70tHcufLNmA3lXW4KcWTMZPDIccNnLlTYfw/edit?usp=sharing) (not used in demo)
+
 
 Introduction
 ------------
@@ -79,16 +93,10 @@ This has worked pretty well, but there are some shortcomings:
 * The loading of the `iframe` isn't super fast. Sometime I'll look at optimizing general site speed and maybe add a load message/spinner in the `iframe`.
 
 
-Demo
-----
-
-To do.
-
-
 Setup
 -----
 
-These steps are going to rough. I'm writing them from memory and I did it haphazardly over the course of development. Please file and issue or pull request if encounter a problem (or if you don't and it just goes smoothly).
+Please file and issue or pull request if encounter a problem with these steps (or even if you don't and it just goes smoothly).
 
 ### Get the code
 
