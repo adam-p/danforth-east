@@ -32,6 +32,11 @@ handlers:
 - url: /vendor
   static_dir: static/vendor
 
+# Admin interface, like the one available via the SDK
+- url: /admin/.*
+  script: google.appengine.ext.admin.application
+  login: admin
+
 # Stuff like cron jobs and email taskqueues
 - url: /tasks/.*
   script: tasks.app
