@@ -269,7 +269,13 @@ This is for the webmaster and/or the controller of the PayPal account.
 
 #### PayPal
 
-* When putting this system live, you should update the existing button rather than create a new one.
+* If you have already been using a PayPal button for accepting subscriptions:
+  
+  Set your account IPN to our new IPN notification URL. In the PayPal web interface go to "My Account / Profile / Selling Preferences / Instant Payment Notification Preferences" (or [this link](https://www.paypal.com/ca/cgi-bin/webscr?cmd=_profile-ipn-notify)). Click "Turn On IPN" (or maybe "Edit Settings"). Set the "Notification URL" to `https://myproject.appspot.com/self-serve/paypal-ipn` (with `myproject` replaced by our real project name). Click "Enabled" and Save.
+
+  - Doing this means that any existing PayPal subscriptions will naturally become part of our new system.
+
+* If you already have an existing subscription button, you can (and should) update it rather than create a new one.
 
 * In "Step 3" of the button interface add to the "advanced variables" field `notify_url=https://myproject.appspot.com/self-serve/paypal-ipn`, with `myproject` replaced by our real project name.
 
