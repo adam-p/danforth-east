@@ -184,11 +184,22 @@ class SelfJoinPage(helpers.BaseHandler):
             expire=datetime.datetime.now()+datetime.timedelta(days=1))
         member_candidate_key = member_candidate.put()
 
-        # We put the key value into the URL so we can retrieve this member
-        # after payment.
-        paypal_url = config.PAYPAL_PAYMENT_URL % (member_candidate_key.urlsafe(),)
+        invoice_id = member_candidate_key.urlsafe()
 
-        self.response.write(paypal_url)
+        # If the payment method is "cheque" create the new member directly,
+        # otherwise start the PayPal process.
+        # TODO: Don't hardcode field name
+        if self.request.params.get('payment_method') == 'cheque':
+            params = {'invoice': invoice_id}
+            taskqueue.add(url='/self-serve/process-member-worker',
+                          params=params)
+            self.response.write('success')
+        else:
+            # We put the key value into the URL so we can retrieve this member
+            # after payment.
+            paypal_url = config.PAYPAL_PAYMENT_URL % (invoice_id,)
+
+            self.response.write(paypal_url)
 
 
 class PaypalIpnHandler(helpers.BaseHandler):

@@ -179,7 +179,7 @@
           console.log('success', arguments);
           _this.waitModalSuccess();
 
-          if (form_mode === 'self-serve') {
+          if (form_mode === 'self-serve' && jqxhr.responseText !== 'success') {
             // The server gave us a Paypal URL to go to. Redirect there.
             // TODO: move this into self-serve-join.js
             $('#waitModalRedirectLink').prop('href', jqxhr.responseText);

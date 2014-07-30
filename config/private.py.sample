@@ -1,15 +1,35 @@
 # -*- coding: utf-8 -*-
 
-"""Configuration values that we don't want to check into source control.
-"""
-
 #
 # Copyright Adam Pritchard 2014
 # MIT License : http://adampritchard.mit-license.org/
 #
 
+"""Configuration values that we don't want to check into source control.
+"""
+
+#
+# Organization info
+#
+
 MASTER_EMAIL_ADDRESS = 'your-gmail-account@gmail.com'
 MASTER_EMAIL_SEND_ADDRESS = 'Your Neighbourhood Community Association <%s>' % (MASTER_EMAIL_ADDRESS,)
+
+ORGANIZATION_MAILING_ADDRESS_HTML = '''
+    Org Name<br>
+    99 Street Ave<br>
+    Toronto, ON H0H 0H0
+    '''
+
+ORGANIZATION_CHEQUES_PAYABLE_NAME = 'Org Full Name'
+
+MEMBERSHIP_FEE_DISPLAY = '$10'
+MEMBERSHIP_FEE_FLOAT = 10.00
+
+
+#
+# Project set-up
+#
 
 # Set this to None to allow sending to all addresses. Set to empty list to
 # prevent sending to any address.
@@ -50,7 +70,7 @@ PAYPAL_TXN_receiver_email = 'youremail@gmail.com'
 # We'll accept Canadian or US currency -- they're pretty close.
 PAYPAL_TXN_mc_currency_SET = ('CAD', 'USD')
 # Membership is $10/year
-PAYPAL_TXN_mc_gross_FLOAT = 10.00
+PAYPAL_TXN_mc_gross_FLOAT = MEMBERSHIP_FEE_FLOAT
 
 
 #

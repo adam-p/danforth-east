@@ -20,8 +20,21 @@ $(function() {
 
   DECA.setupMemberFormSubmit('self-serve', '#newMemberForm', $fakeSubmit);
 
+
   var submitClick = function(event) {
     event.preventDefault();
+
+    // Alter the form and modal depending on payment method
+    // TODO: Don't hardcode field name
+    $('[name="payment_method"]').val($(this).val());
+    if ($(this).val() === 'cheque') {
+      $('#waitModal .show-paypal').addClass('hidden');
+      $('#waitModal .show-cheque').removeClass('hidden');
+    }
+    else {
+      $('#waitModal .show-paypal').removeClass('hidden');
+      $('#waitModal .show-cheque').addClass('hidden');
+    }
 
     if (!inIframe || !('parentIFrame' in window)) {
       // No extra work -- just submit.
@@ -63,7 +76,8 @@ $(function() {
     }
   };
 
-  $('#submitNewMember').click(submitClick);
+  $('#submitNewMemberPaypal').click(submitClick);
+  $('#submitNewMemberCheque').click(submitClick);
 
   $(window).on('message', messageFromParent);
 });

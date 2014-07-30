@@ -16,18 +16,54 @@
   {{ member_form.member_form('self-serve', FIELDS, csrf, volunteer_interests) }}
 
   <div class="row">
-    <div class="col-md-12">
-      <input id="submitNewMember" type="image" alt="PayPal - The safer, easier way to pay online!" name="submit" src="https://www.paypal.com/en_US/i/btn/btn_subscribeCC_LG.gif">
+
+    <div class="col-md-12 submit-btns text-center">
+      <input type="hidden" name="payment_method">
+      <table>
+        <tbody>
+          <tr>
+            <td colspan="2" class="payment-intro">
+              <strong>Join or renew your membership using one of these options:</strong>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Pay now with PayPal</strong></td>
+            <td><strong>Pay later by cash or cheque</strong></td>
+          </tr>
+          <tr>
+            <td>
+              <input id="submitNewMemberPaypal" type="image"
+                     name="submit" value="paypal"
+                     alt="PayPal - The safer, easier way to pay online!"
+                     src="https://www.paypal.com/en_US/i/btn/btn_subscribeCC_LG.gif">
+            </td>
+            <td>
+              <button id="submitNewMemberCheque"
+                      name="submit" value="cheque"
+                      type="submit" class="btn btn-lg btn-primary">
+                Pay Later
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <table border="0" cellpadding="10" cellspacing="0" align="center"><tr><td align="center"></td></tr><tr><td align="center"><a href="https://www.paypal.com/ca/webapps/mpp/paypal-popup" title="How PayPal Works" onclick="javascript:window.open('https://www.paypal.com/ca/webapps/mpp/paypal-popup','WIPaypal','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700'); return false;"><img src="https://www.paypalobjects.com/webstatic/en_CA/mktg/logo-image/bdg_payments_by_pp_2line.png" border="0" alt="Secured by PayPal"></a><div style="text-align:center"><a href="https://www.paypal.com/ca/webapps/mpp/how-paypal-works"><font size="2" face="Arial" color="#0079CD">How PayPal Works</font></a></div></td></tr></table>
+            </td>
+            <td>
+              Mail or hand-deliver your {{ config.MEMBERSHIP_FEE_DISPLAY }} payment to:
+              <address>
+                {{ config.ORGANIZATION_MAILING_ADDRESS_HTML|safe }}
+              </address>
+              Cheques should be payable to "{{ config.ORGANIZATION_CHEQUES_PAYABLE_NAME }}".<br>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
   </div>
 
 </form>
-
-<hr>
-
-<!-- PayPal Logo -->
-<table border="0" cellpadding="10" cellspacing="0" align="center"><tr><td align="center"></td></tr><tr><td align="center"><a href="https://www.paypal.com/ca/webapps/mpp/paypal-popup" title="How PayPal Works" onclick="javascript:window.open('https://www.paypal.com/ca/webapps/mpp/paypal-popup','WIPaypal','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700'); return false;"><img src="https://www.paypalobjects.com/webstatic/en_CA/mktg/logo-image/bdg_payments_by_pp_2line.png" border="0" alt="Secured by PayPal"></a><div style="text-align:center"><a href="https://www.paypal.com/ca/webapps/mpp/how-paypal-works"><font size="2" face="Arial" color="#0079CD">How PayPal Works</font></a></div></td></tr></table>
-<!-- PayPal Logo -->
 
 <!-- Modal -->
 <div id="waitModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="waitModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
@@ -58,18 +94,30 @@
         <div class="success-show error-hide reset-hide hidden">
           <div class="alert alert-success" role="alert">
             <p>
-            <strong>Yay!</strong>
-            First step of registration complete. Now sending you to PayPal...<br>
+              <strong>Yay!</strong>
             </p>
-            <p class="text-center">
-              <a id="waitModalRedirectLink" href="#" target="_top"><img src="https://www.paypalobjects.com/webstatic/en_CA/mktg/logo-image/pp_cc_mark_111x69.jpg" style="height: 4em;"></a>
-            </p>
+            <div class="show-paypal">
+              <p>
+                First step of registration complete. Now sending you to PayPal...
+              </p>
+              <p class="text-center">
+                <a id="waitModalRedirectLink" href="#" target="_top"><img src="https://www.paypalobjects.com/webstatic/en_CA/mktg/logo-image/pp_cc_mark_111x69.jpg" style="height: 4em;"></a>
+              </p>
+            </div>
+            <div class="show-cheque">
+              <p>
+                You have been successfully registered.
+              </p>
+            </div>
           </div>
         </div>
       </div>
       <div class="modal-footer success-hide error-show reset-hide hidden">
         <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
         <button id="waitModalRetry" type="button" class="btn btn-primary btn-lg retry-show hidden">Retry</button>
+      </div>
+      <div class="modal-footer error-hide show-cheque hidden">
+        <a href="/" target="_top" class="btn btn-primary btn-lg" role="button">Done!</a>
       </div>
     </div>
   </div>
