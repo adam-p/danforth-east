@@ -6,6 +6,14 @@
 $(function() {
   "use strict";
 
+  if (document.referrer) {
+    // After a successful member creation (with cheque payment) we want to move
+    // the user off the registration page. We'll send them to the root of the
+    // domain.
+    var doneURL = document.referrer.split('/').slice(0, 3).join('/');
+    $('#doneBtn').attr('href', doneURL);
+  }
+
   var inIframe = (window !== window.top);
 
   // If we're in an iframe, get rid of the forced container width.
