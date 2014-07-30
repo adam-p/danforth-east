@@ -38,10 +38,13 @@
     </div>
 
     <div class="row">
-      <div class="col-sm-12">
+      <div class="col-sm-6">
         {{ my_form_field(fields.member.email,
                          type='email',
                          placeholder='hello@example.com') }}
+      </div>
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.phone_num) }}
       </div>
     </div>
   </fieldset>
@@ -65,7 +68,7 @@
         {{ my_form_field(fields.member.city, value='Toronto') }}
       </div>
       <div class="col-sm-6">
-        {{ my_form_field(fields.member.postal_code, placeholder='M4X 0X0') }}
+        {{ my_form_field(fields.member.postal_code) }}
       </div>
     </div>
   </fieldset>
