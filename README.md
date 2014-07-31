@@ -351,7 +351,6 @@ Future work
   - Right now a premature renewal doesn't give the member any extra time.
 
 * Add ability to restrict sign-up to a particular set of postal codes. Or maybe a geographic bounding box.
-  - But keep in mind that address (including postal code) isn't a required field.
 
 * Map: Add join and renew locations to map.
   - different colours and markers
