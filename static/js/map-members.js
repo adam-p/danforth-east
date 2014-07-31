@@ -146,6 +146,10 @@ $(function() {
 
   function onMarkerClick() {
     /*jshint validthis:true */
+    for (var i = 0; i < markerArray.length; i++) {
+      markerArray[i].DECA_infowindow.close();
+    }
+
     this.DECA_infowindow.open(map, this);
   }
 
