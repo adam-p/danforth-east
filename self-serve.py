@@ -178,7 +178,7 @@ class SelfJoinPage(helpers.BaseHandler):
                                                     'join')
 
         # "Paid" field shouldn't be set by form in self-serve.
-        new_member[config.MEMBER_FIELDS.paid.name] = 'PAYPAL' if self.request.params.get('payment_method') == 'paypal' else ''
+        new_member[config.MEMBER_FIELDS.paid.name] = 'paypal' if self.request.params.get('payment_method') == 'paypal' else ''
 
         # Write the member info to the member candidate store.
         member_candidate = MemberCandidate(
