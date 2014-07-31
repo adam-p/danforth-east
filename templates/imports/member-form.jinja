@@ -155,6 +155,24 @@
       </div>
     </div><!-- /row -->
 
+    {% if create_or_renew_or_self_serve != 'self-serve' %}
+      <div class="row">
+        <div class="col-sm-12">
+          <label id="paidLabel">
+              Membership dues paid:&nbsp;
+          </label>
+          <div class="form-group btn-group" data-toggle="buttons">
+            <label class="btn btn-default btn-lg active">
+              <input type="radio" name="{{ fields.member.paid.name }}" value="at-registration" checked>yes
+            </label>
+            <label class="btn btn-default btn-lg">
+              <input type="radio" name="{{ fields.member.paid.name }}" value="">no
+            </label>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
   </fieldset>
 
   {% import 'imports/wait-modal.jinja' as wait_modal %}
