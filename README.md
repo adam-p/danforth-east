@@ -341,11 +341,14 @@ Future work
 
 * Renewal email. Sent out a few weeks prior to membership expiring. If they've signed up for auto renewal on PayPal, it would be courtesy and if not, we can encourage them to renew.
 
+* Add tracking of member "Skills". They can indicate in the join/renew form what skills they have. Similar in UI and use to "Volunteer Interest Areas".
+
 * Automatically sign people up for blog post emails.
   - (Lots of complications. Feedburner no longer has an API. Need unsubscribe. Lots of work to roll our own. MailChimp, maybe?)
 
 * Volunteer management. Probably a new page. Make it easier for a volunteer manager to see whom has indicated a willingness to volunteer for what. Filter by interest areas. Ability to mass-email those members.
   - Does mass-mail mean we need unsubscribe? Would need another field and a GAE email receiver.
+  - "Skills" probably needs to be included in this.
 
 * If there's a renewal of a not-yet-expired member...? Push the renewal date into the future? But that makes no sense. Maybe "renewed date" should be changed to "expiry date" (or both).
   - Right now a premature renewal doesn't give the member any extra time.
