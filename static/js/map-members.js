@@ -33,7 +33,7 @@ $(function() {
       .done(function(data, textStatus, jqxhr) {
         var i, member, latlong, name, markerLatLng, infowindow, marker,
           notShowing = 0;
-        var mapBounds = new google.maps.LatLngBounds()
+        var mapBounds = new google.maps.LatLngBounds();
 
         for (i = 0; i < data.members.length; i++) {
           member = data.members[i];
@@ -58,9 +58,7 @@ $(function() {
                                                 fields: data.fields})
           });
 
-          google.maps.event.addListener(marker, 'click', function() {
-            this.DECA_infowindow.open(map, this);
-          });
+          google.maps.event.addListener(marker, 'click', onMarkerClick);
         }
 
         $('#membersNotShowing').text(String(notShowing));
@@ -131,7 +129,7 @@ $(function() {
       'rgba(127, 0, 63, 1)',
       'rgba(191, 0, 31, 1)',
       'rgba(255, 0, 0, 1)'
-    ]
+    ];
     heatmap.set('gradient', heatmap.get('gradient') ? null : gradient);
   }
   $('#changeGradient').click(changeGradient);
@@ -145,5 +143,14 @@ $(function() {
     heatmap.set('opacity', heatmap.get('opacity') ? null : 0.2);
   }
   $('#changeOpacity').click(changeOpacity);
+
+  function onMarkerClick() {
+    /*jshint validthis:true */
+    for (var i = 0; i < markerArray.length; i++) {
+      markerArray[i].DECA_infowindow.close();
+    }
+
+    this.DECA_infowindow.open(map, this);
+  }
 
 });

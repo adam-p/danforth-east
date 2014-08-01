@@ -37,7 +37,7 @@ $(function() {
           var $list = $('#membersList');
           var listMembers = [];
           _.each(data.members, function(member, idx) {
-            member._idx = idx
+            member._idx = idx;
             listMembers.push(compileMemberTemplate({member: member, fields: data.fields}));
           });
 
@@ -78,6 +78,8 @@ $(function() {
   }
 
   function onSelectMember(event) {
+    /*jshint validthis:true */
+
     event.preventDefault();
 
     $('.member-item').removeClass('active');

@@ -3,6 +3,8 @@
  * MIT License : http://adampritchard.mit-license.org/
  */
 
+/* jshint sub:true */
+
 (function( DECA, $, _, undefined ) {
   "use strict";
 
@@ -137,7 +139,7 @@
         scrollTop: $badElems.eq(0).offset().top
       });
       $badElems.addClass('bg-danger', 1000, function() {
-        $(this).removeClass('bg-danger', 3000)
+        $(this).removeClass('bg-danger', 3000);
       });
       return false;
     }
@@ -294,7 +296,3 @@
   $(startup);
 
 }( window.DECA = window.DECA || {}, jQuery, _ ));
-
-$(function() {
-
-});

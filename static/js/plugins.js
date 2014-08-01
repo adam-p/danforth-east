@@ -89,4 +89,4 @@ jQuery.fn.fastLiveFilter = function(list, options) {
         }, timeout);
     });
     return this; // maintain jQuery chainability
-}
+};
