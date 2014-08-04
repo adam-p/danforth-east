@@ -341,8 +341,6 @@ Future work
 
 * Renewal email. Sent out a few weeks prior to membership expiring. If they've signed up for auto renewal on PayPal, it would be courtesy and if not, we can encourage them to renew.
 
-* Add tracking of member "Skills". They can indicate in the join/renew form what skills they have. Similar in UI and use to "Volunteer Interest Areas".
-
 * Automatically sign people up for blog post emails.
   - (Lots of complications. Feedburner no longer has an API. Need unsubscribe. Lots of work to roll our own. MailChimp, maybe?)
 
