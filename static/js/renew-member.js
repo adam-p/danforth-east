@@ -111,7 +111,7 @@ $(function() {
           // First clear them
           $input.prop('checked', null);
           // Then set the ones that should be set
-          var vals = val.split(DECA.VOLUNTEER_INTERESTS_DIVIDER);
+          var vals = val.split(DECA.MULTIVALUE_DIVIDER);
           _.each(vals, function(val) {
             $input.filter('[value="'+val+'"]').prop('checked', 'checked');
           });

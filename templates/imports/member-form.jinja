@@ -109,7 +109,7 @@
           <div class="row">
             {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
             {% for volunteer_interest in volunteer_interests %}
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="input-group input-group-lg checkbox-group">
                   <span class="input-group-addon">
                     <i class="fa fa-fw fa-square-o"
@@ -124,7 +124,45 @@
                   <span class="form-control">{{ volunteer_interest }}</span>
                 </div>
               </div>
-              {% if loop.index is divisibleby(2) %}
+              {% if loop.index is divisibleby(3) %}
+                </div>
+                <div class="row">
+              {% endif %}
+            {% endfor %}
+          </div>
+
+        </div><!-- form-group -->
+      </div>
+    </div><!-- /row -->
+
+    <div class="row">
+      <div class="col-sm-12">
+        <label id="skillsLabel" class="{{ 'required' if fields.member.skills.required else '' }}">
+          We desperately need help from people with any of the following skills, 
+          and will pester you up to and including your front door if you check 
+          any of the boxes below:
+        </label>
+        <div class="form-group">
+
+          <div class="row">
+            {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
+            {% for skill in fields.member.skills.values %}
+              <div class="col-md-4">
+                <div class="input-group input-group-lg checkbox-group">
+                  <span class="input-group-addon">
+                    <i class="fa fa-fw fa-square-o"
+                       data-unchecked-icon="fa-square-o"
+                       data-checked-icon="fa-check-square-o"></i>
+                  </span>
+                  <input type="checkbox"
+                         class="hidden"
+                         name="{{ fields.member.skills.name }}"
+                         id="{{ skill }}"
+                         value="{{ skill }}">
+                  <span class="form-control">{{ skill }}</span>
+                </div>
+              </div>
+              {% if loop.index is divisibleby(3) %}
                 </div>
                 <div class="row">
               {% endif %}

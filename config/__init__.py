@@ -27,7 +27,7 @@ TIMEZONE = 'America/Toronto'
 # This is repeated in static/js/common.js
 # TODO: Get rid of this duplication. Maybe run our JS files through jinja
 # (once -- not on every request).
-VOLUNTEER_INTERESTS_DIVIDER = '; '
+MULTIVALUE_DIVIDER = '; '
 
 APP_STATE_NDB_ENTITY_GROUP = 'AppState'
 
@@ -54,13 +54,15 @@ class Field(object):
                  required=False,
                  validator=utils.basic_validator,
                  form_field=True,
-                 mutable=True):
+                 mutable=True,
+                 values=None):
         self.title = title
         self.name = utils.title_to_name(title)
         self.required = required
         self.validator = validator
         self.form_field = form_field
         self.mutable = mutable
+        self.values = values
 
     def as_dict(self, json_safe):
         res = {}
@@ -134,7 +136,10 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Family Member Names'),
     Field('Join Location'),
     Field('Volunteer Interests'),
-    Field('Skills'),
+    Field('Skills', values=['Carpentry', 'Web Development', 'Event Planning',
+                            'Graphic Design/Visual Art', 'Photography',
+                            'PR/Publicity', 'Social Media', 'Writing/Editing',
+                            'Staging/Window dressing']),
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
     Field('Renewed LatLong', form_field=False),

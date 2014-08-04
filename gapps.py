@@ -96,6 +96,11 @@ def member_dict_from_request(request, actor, join_or_renew):
             # This causes the request processing to stop
             webapp2.abort(400, detail='invalid field')
 
+        if field.values is not None and request.POST.get(name) is not None \
+           and not set(request.POST.get(name).split(config.MULTIVALUE_DIVIDER)).issubset(field.values):
+            # This causes the request processing to stop
+            webapp2.abort(400, detail='invalid field value')
+
     member = config.validate_member(request.POST)
 
     if not member:
@@ -321,7 +326,7 @@ def get_volunteer_interest_reps_for_member(member_data):
                              config.VOLUNTEER_WORKSHEET_KEY)
 
     member_interests = member_data.get(config.MEMBER_FIELDS.volunteer_interests.name, '')\
-                                  .split(config.VOLUNTEER_INTERESTS_DIVIDER)
+                                  .split(config.MULTIVALUE_DIVIDER)
 
     interest_reps = {}
 

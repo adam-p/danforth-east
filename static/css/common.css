@@ -45,4 +45,8 @@
 .checkbox-group .form-control,
 .checkbox-text .form-control {
   display: inline-table;
+  /* Make the text smaller than the default for a large form-control. We want
+  the touch-box to be pretty big vertically, but we want to fit three across on
+  the screen. */
+  font-size: 1em;
 }

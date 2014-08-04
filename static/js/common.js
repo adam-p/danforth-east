@@ -11,7 +11,7 @@
   var _this = DECA;
 
   // This is repeated in config/__init__.py
-  _this.VOLUNTEER_INTERESTS_DIVIDER = '; ';
+  _this.MULTIVALUE_DIVIDER = '; ';
 
   //
   // Fancy checkbox functions
@@ -217,7 +217,7 @@
     // We're actually going to alter the input, but that's okay.
     _.forOwn(data, function(val, key) {
       if (_(val).isArray()) {
-        data[key] = _.compact(val).join(_this.VOLUNTEER_INTERESTS_DIVIDER);
+        data[key] = _.compact(val).join(_this.MULTIVALUE_DIVIDER);
       }
     });
 
