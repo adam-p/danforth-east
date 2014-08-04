@@ -377,7 +377,10 @@ def cull_members_sheet():
 
         renewed_ago = datetime.timedelta.max
         if renewed_date:
-            renewed_ago = now - dateutil.parser.parse(renewed_date)
+            try:
+                renewed_ago = now - dateutil.parser.parse(renewed_date)
+            except:
+                pass
 
         if renewed_ago.days > 800:  # two years and a bit
             logging.info('cull_members_sheet: deleting: %s' % entry_dict)

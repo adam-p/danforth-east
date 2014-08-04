@@ -84,7 +84,9 @@ def latlong_validator(val, required):
 def current_datetime():
     """Returns string of current datetime.
     """
-    return datetime.datetime.now(pytz.timezone(config.TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+    #return datetime.datetime.now(pytz.timezone(config.TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+    # We only want the date and not the time.
+    return datetime.datetime.now(pytz.timezone(config.TIMEZONE)).strftime('%Y-%m-%d')
 
 
 def days_ago(datestring):

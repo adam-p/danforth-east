@@ -40,8 +40,8 @@ PAYPAL_ACTOR_NAME = 'PAYPAL'
 
 # This is where we send the counter-request to validate IPN notifications.
 # NOTE: When testing, make sure this is www.sandbox.paypal.com!
-PAYPAL_IPN_VALIDATION_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
-#PAYPAL_IPN_VALIDATION_URL = 'https://www.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
+#PAYPAL_IPN_VALIDATION_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
+PAYPAL_IPN_VALIDATION_URL = 'https://www.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
 
 
 #
