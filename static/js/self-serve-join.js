@@ -77,6 +77,15 @@ $(function() {
 
     if (data.message === 'get-top-response') {
       var top = data.value;
+
+      // If `top` is negative, then the top of the iframe is in full view.
+      // In that case, just use 0.
+      if (top < 0) {
+        top = 0;
+      }
+
+      top += 'px';
+
       $('.modal').css('top', top);
 
       // Now do the actual submit.

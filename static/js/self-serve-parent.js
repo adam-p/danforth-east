@@ -30,7 +30,6 @@
       messageCallback: function(event) {
         if (event.message === 'get-top') {
           var top = jQuery(window).scrollTop() - jQuery(event.iframe).offset().top;
-          top += 'px';
           event.iframe.contentWindow.postMessage(JSON.stringify({
             message: 'get-top-response',
             value: top

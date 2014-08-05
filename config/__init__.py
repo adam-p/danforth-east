@@ -14,7 +14,7 @@ import utils
 from private import *
 
 
-DEBUG = True
+DEBUG = False
 
 if not DEBUG:
     ALLOWED_EMAIL_TO_ADDRESSES = None
