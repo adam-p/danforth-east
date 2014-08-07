@@ -43,6 +43,11 @@ handlers:
   login: admin
   secure: always
 
+# Daily log emailer
+- url: /_ereporter.*
+  script: google.appengine.ext.ereporter.report_generator.application
+  login: admin
+
 # Stuff like cron jobs and email taskqueues
 - url: /tasks/.*
   script: tasks.app

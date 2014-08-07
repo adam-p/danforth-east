@@ -1,4 +1,8 @@
 cron:
+- description: Daily exception report
+  url: /_ereporter?sender=pritchard.adam@gmail.com&to=pritchard.adam@gmail.com&versions=all
+  schedule: every day 00:00
+
 - description: Cull defunct members from members sheet
   url: /tasks/member-sheet-cull
   schedule: every day 02:00
