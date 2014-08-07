@@ -339,6 +339,8 @@ Future work
 
 ### Features
 
+* Add captcha to self-serve form (or at least to the pay-later option).
+
 * Renewal email. Sent out a few weeks prior to membership expiring. If they've signed up for auto renewal on PayPal, it would be courtesy and if not, we can encourage them to renew.
 
 * Automatically sign people up for blog post emails.
