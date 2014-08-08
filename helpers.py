@@ -53,7 +53,10 @@ def check_csrf(request):
     # It's important to make sure the cookie isn't empty, otherwise the attacker
     # could send the attack-POST before the user hits the page for the first
     # time and gets a cookie.
-    if not request.cookies.get('csrf') or request.get('csrf') != request.cookies.get('csrf'):
+    if not request.cookies.get('csrf') or \
+       request.get('csrf') != request.cookies.get('csrf'):
+        logging.error('CSRF mismatch: req csrf=>>%s<<; cookie csrf=>>%s<<',
+                      request.get('csrf'), request.cookies.get('csrf'))
         webapp2.abort(403, detail='CSRF check fail')
 
 
