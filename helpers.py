@@ -57,7 +57,7 @@ def check_csrf(request):
        request.get('csrf') != request.cookies.get('csrf'):
         logging.error('CSRF mismatch: req csrf=>>%s<<; cookie csrf=>>%s<<',
                       request.get('csrf'), request.cookies.get('csrf'))
-        webapp2.abort(403, detail='CSRF check fail')
+        webapp2.abort(403, detail='CSRF check fail. Make sure you have cookies enabled. Reload this page and try again.')
 
 
 def latlong_for_member(member_dict):
