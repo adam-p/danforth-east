@@ -124,9 +124,9 @@ class SelfJoinPage(helpers.BaseHandler):
         """Serve the form page.
         """
         logging.info('SelfJoinPage.GET')
-        logging.info('headers: %s' % self.request.headers.items())
-        logging.info('params: %s' % self.request.params.items())
-        logging.info('body: %s' % self.request.body)
+        logging.info('headers: %s', self.request.headers.items())
+        logging.info('params: %s', self.request.params.items())
+        logging.info('body: %s', self.request.body)
 
         # Make sure (as best we can) that this is being requested from a site
         # that's allowed to embed our join form.
@@ -136,28 +136,29 @@ class SelfJoinPage(helpers.BaseHandler):
         #       urlparse(self.request.referer).hostname not in config.ALLOWED_EMBED_REFERERS:
         #        webapp2.abort(403, detail='bad referer')
 
-        csrf = helpers.create_csrf_token()
+        csrf_token = helpers.get_csrf_token(self.request)
 
         volunteer_interests = gapps.get_volunteer_interests()
 
         template_values = {
             'FIELDS': config.FIELDS,
-            'csrf': csrf,
+            'csrf_token': csrf_token,
             'volunteer_interests': volunteer_interests,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('self-serve-join.jinja')
 
-        self.response.set_cookie('csrf', csrf, path=self.request.path)
+        helpers.set_csrf_cookie(self.response, csrf_token)
         self.response.write(template.render(template_values))
 
     def post(self):
         """Create the new member.
         """
         logging.info('SelfJoinPage.POST')
-        logging.info('headers: %s' % self.request.headers.items())
-        logging.info('params: %s' % self.request.params.items())
-        logging.info('body: %s' % self.request.body)
+        logging.info('headers: %s', self.request.headers.items())
+        logging.info('params: %s', self.request.params.items())
+        logging.info('cookies: %s', self.request.cookies.items())
+        logging.info('body: %s', self.request.body)
 
         # Make sure (as best we can) that this is being requested from a site
         # that's allowed to embed our join form.
@@ -178,7 +179,9 @@ class SelfJoinPage(helpers.BaseHandler):
                                                     'join')
 
         # "Paid" field shouldn't be set by form in self-serve.
-        new_member[config.MEMBER_FIELDS.paid.name] = 'paypal' if self.request.params.get('payment_method') == 'paypal' else 'N'
+        new_member[config.MEMBER_FIELDS.paid.name] = 'N'
+        if self.request.params.get('payment_method') == 'paypal':
+            new_member[config.MEMBER_FIELDS.paid.name] = 'paypal'
 
         # Write the member info to the member candidate store.
         member_candidate = MemberCandidate(
@@ -215,8 +218,8 @@ class PaypalIpnHandler(helpers.BaseHandler):
         """Serve the form page.
         """
         logging.info('PaypalIpnHandler.POST')
-        logging.info('headers: %s' % self.request.headers.items())
-        logging.info('params: %s' % self.request.params.items())
+        logging.info('headers: %s', self.request.headers.items())
+        logging.info('params: %s', self.request.params.items())
 
         # First check with Paypal to see if this notification is legit
         validation_url = config.PAYPAL_IPN_VALIDATION_URL % (self.request.body,)
@@ -225,14 +228,15 @@ class PaypalIpnHandler(helpers.BaseHandler):
         if resp.status != 200 or body != 'VERIFIED':
             # NOT LEGIT
             logging.warning('invalid IPN request')
-            logging.warning('%d; %s' % (resp.status, body))
+            logging.warning('%d; %s', resp.status, body)
             webapp2.abort(403)
 
         # Check if this actually represents a payment
         if self.request.params.get('payment_status') != 'Completed':
             # Not a completed payment, but some intermediate event. We don't
             # do anything with these.
-            logging.info('IPN with status: %s' % self.request.params.get('payment_status'))
+            logging.info('IPN with status: %s',
+                         self.request.params.get('payment_status'))
             return  # 200
 
         # Check if the payment values are valid
@@ -400,7 +404,7 @@ class ExpireMemberCandidates(helpers.BaseHandler):
         now = datetime.datetime.now()
         expireds = MemberCandidate.query(MemberCandidate.expire <= now).fetch()
         if expireds:
-            logging.info('Expiring %d MemberCandidate items' % (len(expireds),))
+            logging.info('Expiring %d MemberCandidate items', len(expireds))
             ndb.delete_multi([expired.key for expired in expireds])
 
 

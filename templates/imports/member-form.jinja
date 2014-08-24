@@ -1,6 +1,6 @@
 {% import 'imports/form-field.jinja' as form_field %}
 
-{% macro member_form(create_or_renew_or_self_serve, fields, csrf, volunteer_interests) -%}
+{% macro member_form(create_or_renew_or_self_serve, fields, csrf_token, volunteer_interests) -%}
 
   {% set bv_common = 'data-bv-message="This value is not valid" data-bv-notempty-message="This value is required" data-bv-emailaddress-message="This value is not a valid email address" ' %}
 
@@ -23,7 +23,7 @@
   </style>
 
   <input name="{{fields.member.id.name}}" type="hidden" class="hidden" />
-  <input name="csrf" type="hidden" class="hidden" value="{{csrf}}" />
+  <input name="csrf-token" type="hidden" class="hidden" value="{{csrf_token}}" />
 
   <fieldset>
     <legend>Name</legend>

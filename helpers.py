@@ -10,6 +10,7 @@
 
 
 import random
+import datetime
 
 import logging
 import webapp2
@@ -37,12 +38,21 @@ class BaseHandler(webapp2.RequestHandler):
             self.response.set_status(500)
 
 
-def create_csrf_token():
-    """Generates a token for use in preventing cross-site request forgery
-    attacks. Returns a string.
+_CSRF_FIELD_NAME = 'csrf-token'
+
+
+def get_csrf_token(request):
+    """Get the current CSRF (cross-site request forgery attack) token from the
+    request. If there isn't one, generate one.
+    Returns a string.
     """
-    # The prepended string is only to make it a little clearer when debugging.
-    return 'csrf' + str(random.getrandbits(128))
+    cookie_csrf_token = request.cookies.get(_CSRF_FIELD_NAME)
+
+    if not cookie_csrf_token:
+        # The prepended string is only to make it a little clearer when debugging.
+        cookie_csrf_token = 'csrf' + str(random.getrandbits(128))
+
+    return cookie_csrf_token
 
 
 def check_csrf(request):
@@ -53,11 +63,21 @@ def check_csrf(request):
     # It's important to make sure the cookie isn't empty, otherwise the attacker
     # could send the attack-POST before the user hits the page for the first
     # time and gets a cookie.
-    if not request.cookies.get('csrf') or \
-       request.get('csrf') != request.cookies.get('csrf'):
+    cookie_csrf_token = request.cookies.get(_CSRF_FIELD_NAME)
+    request_csrf_token = request.get(_CSRF_FIELD_NAME)
+    if not cookie_csrf_token or request_csrf_token != cookie_csrf_token:
         logging.error('CSRF mismatch: req csrf=>>%s<<; cookie csrf=>>%s<<',
-                      request.get('csrf'), request.cookies.get('csrf'))
+                      request_csrf_token, cookie_csrf_token)
         webapp2.abort(403, detail='CSRF check fail. Make sure you have cookies enabled. Reload this page and try again.')
+
+
+def set_csrf_cookie(response, csrf_token):
+    """Set the CSRF token as a cookie in the response.
+    """
+    response.set_cookie(_CSRF_FIELD_NAME, value=csrf_token,
+                        #secure=True,  # It would be nice to set this, but it messes up local testing. Since we only allow HTTPS connections, it's probably okay to leave this False...?
+                        httponly=True, path='/',
+                        expires=datetime.datetime.now()+datetime.timedelta(7))
 
 
 def latlong_for_member(member_dict):

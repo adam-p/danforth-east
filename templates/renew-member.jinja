@@ -84,7 +84,7 @@
 
   <form id="renewMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-    {{ member_form.member_form('renew', FIELDS, csrf, volunteer_interests) }}
+    {{ member_form.member_form('renew', FIELDS, csrf_token, volunteer_interests) }}
 
     <button id="submitRenewMember" type="submit" class="btn btn-lg btn-primary">Renew DECA membership!</button>
 

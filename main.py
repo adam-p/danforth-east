@@ -59,19 +59,19 @@ class NewMemberPage(helpers.BaseHandler):
             self.redirect('/bad-user')
             return
 
-        csrf = helpers.create_csrf_token()
+        csrf_token = helpers.get_csrf_token(self.request)
 
         volunteer_interests = gapps.get_volunteer_interests()
 
         template_values = {
             'FIELDS': config.FIELDS,
-            'csrf': csrf,
+            'csrf_token': csrf_token,
             'volunteer_interests': volunteer_interests,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('new-member.jinja')
 
-        self.response.set_cookie('csrf', csrf, path=self.request.path)
+        helpers.set_csrf_cookie(self.response, csrf_token)
         self.response.write(template.render(template_values))
 
     def post(self):
@@ -109,19 +109,19 @@ class RenewMemberPage(helpers.BaseHandler):
             self.redirect('/bad-user')
             return
 
-        csrf = helpers.create_csrf_token()
+        csrf_token = helpers.get_csrf_token(self.request)
 
         volunteer_interests = gapps.get_volunteer_interests()
 
         template_values = {
             'FIELDS': config.FIELDS,
-            'csrf': csrf,
+            'csrf_token': csrf_token,
             'volunteer_interests': volunteer_interests,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('renew-member.jinja')
 
-        self.response.set_cookie('csrf', csrf, path=self.request.path)
+        helpers.set_csrf_cookie(self.response, csrf_token)
         self.response.write(template.render(template_values))
 
     def post(self):
@@ -190,16 +190,16 @@ class AuthorizeUserPage(helpers.BaseHandler):
             self.redirect('/bad-user')
             return
 
-        csrf = helpers.create_csrf_token()
+        csrf_token = helpers.get_csrf_token(self.request)
 
         template_values = {
             'FIELDS': config.FIELDS,
-            'csrf': csrf,
+            'csrf_token': csrf_token,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('authorize-user.jinja')
 
-        self.response.set_cookie('csrf', csrf, path=self.request.path)
+        helpers.set_csrf_cookie(self.response, csrf_token)
         self.response.write(template.render(template_values))
 
     def post(self):

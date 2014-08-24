@@ -14,7 +14,7 @@
 
 <form id="newMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-  {{ member_form.member_form('create', FIELDS, csrf, volunteer_interests) }}
+  {{ member_form.member_form('create', FIELDS, csrf_token, volunteer_interests) }}
 
   <button id="submitNewMember" type="submit" class="btn btn-lg btn-primary">Join DECA!</button>
 

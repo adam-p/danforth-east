@@ -13,7 +13,7 @@
 
 <form id="newMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-  {{ member_form.member_form('self-serve', FIELDS, csrf, volunteer_interests) }}
+  {{ member_form.member_form('self-serve', FIELDS, csrf_token, volunteer_interests) }}
 
   <div class="row">
 
