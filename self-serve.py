@@ -168,7 +168,11 @@ class SelfJoinPage(helpers.BaseHandler):
         #       urlparse(self.request.referer).hostname not in config.ALLOWED_EMBED_REFERERS:
         #        webapp2.abort(403, detail='bad referer')
 
-        helpers.check_csrf(self.request)
+        # HACK: Safari doesn't allow cookie setting in an iframe without
+        # direct user interaction. So this fails every time on desktop and
+        # mobile Safari.
+        # TODO: Use new CSRF approach that doesn't need cookies.
+        #helpers.check_csrf(self.request)
 
         # TODO: Don't hardcode key
         referrer = self.request.params.get('_referrer') or self.request.referer
