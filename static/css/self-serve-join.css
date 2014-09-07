@@ -15,3 +15,9 @@
 .submit-btns .payment-intro {
   font-size: 1.4em;
 }
+
+/* We need to reset some of the Bootstrap styles. */
+.container {
+  padding-right: 0;
+  padding-left: 0;
+}
