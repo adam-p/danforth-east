@@ -1,0 +1,20 @@
+{% import 'imports/member-form-fields.jinja' as member_form_fields %}
+
+{% macro member_form(fields, csrf, volunteer_interests) -%}
+
+<div id="newMember">
+  {# TODO: don't hardcode action #}
+  <form action="/new-member" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
+
+    {{ member_form_fields.member_form_fields('create', fields, csrf, volunteer_interests) }}
+
+    <button type="submit" class="btn btn-lg btn-primary">Join DECA!</button>
+
+  </form>
+
+  {% import 'imports/wait-modal.jinja' as wait_modal %}
+  {{ wait_modal.wait_modal('create', None) }}
+
+</div>
+
+{%- endmacro %}

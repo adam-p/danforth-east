@@ -7,11 +7,10 @@ $(function() {
   "use strict";
 
   if (document.referrer) {
-    // After a successful member creation (with cheque payment) we want to move
-    // the user off the registration page. We'll send them to the root of the
-    // domain.
+    // After a successful creation we want to move the user off the
+    // registration page. We'll send them to the root of the domain.
     var doneURL = document.referrer.split('/').slice(0, 3).join('/');
-    $('#newMember .doneBtn').attr('href', doneURL);
+    $('#newVolunteer .doneBtn').attr('href', doneURL);
   }
 
   var inIframe = (window !== window.top);
@@ -27,25 +26,12 @@ $(function() {
   var $fakeSubmit = $('<div class="hidden">').appendTo('body');
 
   DECA.setupMemberFormSubmit('self-serve',
-                             '#newMember form',
-                             '#newMember .waitModal',
+                             '#newVolunteer form',
+                             '#newVolunteer .waitModal',
                              $fakeSubmit);
-
 
   var submitClick = function(event) {
     event.preventDefault();
-
-    // Alter the form and modal depending on payment method
-    // TODO: Don't hardcode field name
-    $('#newMember [name="payment_method"]').val($(this).val());
-    if ($(this).val() === 'cheque') {
-      $('#newMember .waitModal .show-paypal').addClass('hidden');
-      $('#newMember .waitModal .show-cheque').removeClass('hidden');
-    }
-    else {
-      $('#newMember .waitModal .show-paypal').removeClass('hidden');
-      $('#newMember .waitModal .show-cheque').addClass('hidden');
-    }
 
     if (!inIframe || !('parentIFrame' in window)) {
       // No extra work -- just submit.
@@ -60,7 +46,7 @@ $(function() {
 
     window.parentIFrame.sendMessage(JSON.stringify({
       action: 'get-top',
-      responseID: 'self-serve-join'
+      responseID: 'self-serve-volunteer'
     }));
 
     return false;
@@ -81,7 +67,7 @@ $(function() {
       return;
     }
 
-    if (data.responseID !== 'self-serve-join') {
+    if (data.responseID !== 'self-serve-volunteer') {
       // Not for us
       return;
     }
@@ -97,14 +83,14 @@ $(function() {
 
       top += 'px';
 
-      $('#newMember .modal').css('top', top);
+      $('#newVolunteer .modal').css('top', top);
 
       // Now do the actual submit.
       $fakeSubmit.click();
     }
   };
-  $(window).on('message', messageFromParent);
 
-  $('#newMember [name="submit"][value="paypal"]').click(submitClick);
-  $('#newMember [name="submit"][value="cheque"]').click(submitClick);
+  $('#newVolunteer button[type="submit"]').click(submitClick);
+
+  $(window).on('message', messageFromParent);
 });

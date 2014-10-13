@@ -1,12 +1,20 @@
 {# This is only used for the create and renew management pages #}
 
-{% macro wait_modal(create_or_renew) -%}
+{% macro wait_modal(create_or_renew, modal_id) -%}
+  {# We need to use an ID attribute for `aria-labelledby`, but we want to avoid
+     conflicting with any other IDs in the document.
+     TODO: Figure out a better way of generating a random value. Custom filter, maybe. #}
+  {% set waitModalLabelId = 'waitModalLabel-%s' % (range(0,10000)|random) %}
+
   <!-- Modal -->
-  <div id="waitModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="waitModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <div {{ 'id="%s"' % modal_id if modal_id else '' }}
+       class="waitModal modal fade" tabindex="-1" role="dialog"
+       aria-labelledby="{{ waitModalLabelId }}" aria-hidden="true"
+       data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
-          <h4 class="modal-title" id="waitModalLabel">
+          <h4 class="modal-title" id="{{ waitModalLabelId }}">
             {% if create_or_renew == 'create' %}
               Creating new member...
             {% else %}
@@ -28,7 +36,7 @@
                   Member renewal request failed.
                 {% endif %}
               </p>
-              <p id="waitModalServerMessage">
+              <p class="waitModalServerMessage">
               </p>
               <p class="hidden retry-show reset-hide">
                 It appears that our server hiccuped. Hit the Retry button and see if it has sorted itself out.
@@ -56,8 +64,8 @@
         </div>
         <div class="modal-footer success-hide error-show reset-hide hidden">
           <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-          <button id="waitModalRetry" type="button" class="btn btn-primary btn-lg hidden retry-show reset-hide">Retry</button>
-          <a id="waitModalRenew" href="/renew-member" class="btn btn-primary btn-lg hidden conflict-email-show reset-hide" role="button">Renew Member</a>
+          <button type="button" class="waitModalRetry btn btn-primary btn-lg hidden retry-show reset-hide">Retry</button>
+          <a href="/renew-member" class="waitModalRenew btn btn-primary btn-lg hidden conflict-email-show reset-hide" role="button">Renew Member</a>
         </div>
         <div class="modal-footer success-show error-hide reset-hide hidden">
           <a href="/" class="btn btn-primary btn-lg" role="button">Done!</a>

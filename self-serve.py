@@ -301,7 +301,7 @@ Current URL:
 
 
 class ProcessMemberWorker(helpers.BaseHandler):
-    """Creates or renews a member when payment has been receieved.
+    """Creates or renews a member when payment has been received.
     """
 
     def post(self):
@@ -412,9 +412,116 @@ class ExpireMemberCandidates(helpers.BaseHandler):
             ndb.delete_multi([expired.key for expired in expireds])
 
 
+class SelfVolunteerPage(helpers.BaseHandler):
+    """This is the page that new volunteers will fill out in order to join.
+    """
+
+    def get(self):
+        """Serve the form page.
+        """
+        logging.info('SelfVolunteerPage.GET')
+        logging.info('headers: %s' % self.request.headers.items())
+        logging.info('params: %s' % self.request.params.items())
+        logging.info('body: %s' % self.request.body)
+
+        # Make sure (as best we can) that this is being requested from a site
+        # that's allowed to embed our join form.
+        # This is such a weak check that I'm not sure it's worth it.
+        #if not config.DEBUG:
+        #    if not self.request.referer or \
+        #       urlparse(self.request.referer).hostname not in config.ALLOWED_EMBED_REFERERS:
+        #        webapp2.abort(403, detail='bad referer')
+
+        csrf_token = helpers.get_csrf_token(self.request)
+
+        volunteer_interests = gapps.get_volunteer_interests()
+
+        template_values = {
+            'FIELDS': config.FIELDS,
+            'csrf_token': csrf_token,
+            'volunteer_interests': volunteer_interests,
+            'config': config,
+        }
+        template = JINJA_ENVIRONMENT.get_template('self-serve-volunteer.jinja')
+
+        helpers.set_csrf_cookie(self.response, csrf_token)
+        self.response.write(template.render(template_values))
+
+    def post(self):
+        """Create the new volunteer.
+        """
+        logging.info('SelfVolunteerPage.POST')
+        logging.info('headers: %s' % self.request.headers.items())
+        logging.info('params: %s' % self.request.params.items())
+        logging.info('body: %s' % self.request.body)
+
+        # Make sure (as best we can) that this is being requested from a site
+        # that's allowed to embed our join form.
+        # This is such a weak check that I'm not sure it's worth it.
+        #if not config.DEBUG:
+        #    if not self.request.referer or \
+        #       urlparse(self.request.referer).hostname not in config.ALLOWED_EMBED_REFERERS:
+        #        webapp2.abort(403, detail='bad referer')
+        # TODO: Use new CSRF approach that doesn't need cookies.
+        #helpers.check_csrf(self.request)
+
+        # TODO: Don't hardcode key
+        referrer = self.request.params.get('_referrer') or self.request.referer
+
+        # Create a dict of the volunteer info.
+        new_volunteer = gapps.volunteer_dict_from_request(self.request,
+                                                          referrer)
+
+        gapps.join_volunteer_from_dict(new_volunteer)
+
+        self.response.write('success')
+
+        # Queue the welcome email
+        taskqueue.add(url='/tasks/new-volunteer-mail', params=new_volunteer)
+
+
+class SelfComboPage(helpers.BaseHandler):
+    """This page has multiple registration types on it (i.e., member and
+    volunteer).
+    """
+
+    def get(self):
+        """Serve the form page.
+        """
+        logging.info('SelfComboPage.GET')
+        logging.info('headers: %s' % self.request.headers.items())
+        logging.info('params: %s' % self.request.params.items())
+        logging.info('body: %s' % self.request.body)
+
+        # Make sure (as best we can) that this is being requested from a site
+        # that's allowed to embed our join form.
+        # This is such a weak check that I'm not sure it's worth it.
+        #if not config.DEBUG:
+        #    if not self.request.referer or \
+        #       urlparse(self.request.referer).hostname not in config.ALLOWED_EMBED_REFERERS:
+        #        webapp2.abort(403, detail='bad referer')
+
+        csrf_token = helpers.get_csrf_token(self.request)
+
+        volunteer_interests = gapps.get_volunteer_interests()
+
+        template_values = {
+            'FIELDS': config.FIELDS,
+            'csrf_token': csrf_token,
+            'volunteer_interests': volunteer_interests,
+            'config': config,
+        }
+        template = JINJA_ENVIRONMENT.get_template('self-serve-combo.jinja')
+
+        helpers.set_csrf_cookie(self.response, csrf_token)
+        self.response.write(template.render(template_values))
+
+
 app = webapp2.WSGIApplication([  # pylint: disable=C0103
     ('/self-serve/join', SelfJoinPage),
     ('/self-serve/paypal-ipn', PaypalIpnHandler),
     ('/self-serve/process-member-worker', ProcessMemberWorker),
     ('/self-serve/expire-member-candidates', ExpireMemberCandidates),
+    ('/self-serve/volunteer', SelfVolunteerPage),
+    ('/self-serve/combo', SelfComboPage)
 ], debug=config.DEBUG)

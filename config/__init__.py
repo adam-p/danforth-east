@@ -73,6 +73,12 @@ class Field(object):
         return res
 
 
+_SKILLS_VALUES = ('Carpentry', 'Web Development', 'Event Planning',
+                  'Graphic Design/Visual Art', 'Photography',
+                  'PR/Publicity', 'Social Media', 'Writing/Editing',
+                  'Staging/Window dressing')
+
+
 # TODO: Probably better use classes than namedtuple for these sets of fields
 AUTHORIZED_FIELDS = namedtuple('AUTHORIZED_FIELDS',
                                ['id',
@@ -136,10 +142,7 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Family Member Names'),
     Field('Join Location'),
     Field('Volunteer Interests'),
-    Field('Skills', values=['Carpentry', 'Web Development', 'Event Planning',
-                            'Graphic Design/Visual Art', 'Photography',
-                            'PR/Publicity', 'Social Media', 'Writing/Editing',
-                            'Staging/Window dressing']),
+    Field('Skills', values=_SKILLS_VALUES),
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
     Field('Renewed LatLong', form_field=False),
@@ -151,6 +154,47 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
 
 
 VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
+                              ['id',
+                               'joined',
+                               'joined_by',
+                               'first_name',
+                               'last_name',
+                               'email',
+                               'phone_num',
+                               'apt_num',
+                               'street_num',
+                               'street_name',
+                               'city',
+                               'postal_code',
+                               'address_latlong',
+                               'join_location',
+                               'volunteer_interests',
+                               'skills',
+                               'joined_latlong',
+                               'joined_address',
+                               ])(
+    Field('ID', validator=lambda *args: True, form_field=True, mutable=False),
+    Field('Joined', validator=lambda *args: True, form_field=False, mutable=False),
+    Field('Joined By', validator=lambda *args: True, form_field=False, mutable=False),
+    Field('First Name', required=True),
+    Field('Last Name', required=True),
+    Field('Email', required=True, validator=utils.email_validator),
+    Field('Phone Number'),
+    Field('Apartment Number'),
+    Field('Street Number'),
+    Field('Street Name'),
+    Field('City'),
+    Field('Postal Code'),
+    Field('Address LatLong', form_field=False),
+    Field('Join Location'),
+    Field('Volunteer Interests'),
+    Field('Skills', values=_SKILLS_VALUES),
+    Field('Joined LatLong', form_field=False),
+    Field('Joined Address', form_field=False),
+)
+
+
+VOLUNTEER_INTEREST_FIELDS = namedtuple('VOLUNTEER_INTEREST_FIELDS',
                                ['interest',
                                 'email',
                                 'name'])(
@@ -160,8 +204,10 @@ VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
 )
 
 
-FIELDS = namedtuple('FIELDS', ['authorized', 'member', 'volunteer'])(
-    AUTHORIZED_FIELDS, MEMBER_FIELDS, VOLUNTEER_FIELDS
+FIELDS = namedtuple('FIELDS', ['authorized', 'member',
+                               'volunteer_interest', 'volunteer'])(
+    AUTHORIZED_FIELDS, MEMBER_FIELDS,
+    VOLUNTEER_INTEREST_FIELDS, VOLUNTEER_FIELDS
 )
 
 
@@ -184,6 +230,10 @@ def validate_obj_against_fields(obj, fields):
 
 def validate_member(member):
     return validate_obj_against_fields(member, MEMBER_FIELDS)
+
+
+def validate_volunteer(member):
+    return validate_obj_against_fields(member, VOLUNTEER_FIELDS)
 
 
 def fields_to_dict(fields):

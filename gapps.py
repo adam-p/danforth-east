@@ -29,6 +29,12 @@ import utils
 import helpers
 
 
+# Set the urlfetch timeout deadline longer. Sometimes it takes a while for
+# GData requests to complete.
+from google.appengine.api import urlfetch
+urlfetch.set_default_fetch_deadline(60)
+
+
 _gdata_client = None
 _drive_service = None
 _http = None
@@ -72,8 +78,8 @@ def is_user_authorized(user):
     querystring = '%s=="%s"' % (config.AUTHORIZED_FIELDS.email.name,
                                 user.email())
     auth_user = _get_single_list_entry(querystring,
-                                       spreadsheet_key=config.AUTHORIZED_SPREADSHEET_KEY,
-                                       worksheet_key=config.AUTHORIZED_WORKSHEET_KEY)
+                                       config.AUTHORIZED_SPREADSHEET_KEY,
+                                       config.AUTHORIZED_WORKSHEET_KEY)
     if auth_user:
         return True
 
@@ -131,12 +137,60 @@ def member_dict_from_request(request, actor, join_or_renew):
     member[config.MEMBER_FIELDS.renewed_latlong.name] = geoposition
     member[config.MEMBER_FIELDS.renewed_address.name] = geoaddress
 
-    member[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_member(member)
+    member[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_record(
+                                                            config.MEMBER_FIELDS,
+                                                            member)
 
     return member
 
 
-def _update_member(list_entry, update_dict):
+def volunteer_dict_from_request(request, actor):
+    """Creates and returns a dict of volunteer info from the request.
+    """
+
+    logging.debug('volunteer_dict_from_request')
+    logging.debug(request.params.items())
+
+    # Make sure the user/form/request isn't trying to mess with fields that it
+    # shouldn't be.
+    for name, field in config.VOLUNTEER_FIELDS._asdict().items():
+        if not field.form_field and request.POST.get(name) is not None:
+            # This causes the request processing to stop
+            webapp2.abort(400, detail='invalid field')
+
+        if field.values is not None and request.POST.get(name) is not None \
+           and not set(request.POST.get(name).split(config.MULTIVALUE_DIVIDER)).issubset(field.values):
+            # This causes the request processing to stop
+            webapp2.abort(400, detail='invalid field value')
+
+    volunteer = config.validate_volunteer(request.POST)
+
+    if not volunteer:
+        # This causes the request processing to stop
+        webapp2.abort(400, detail='invalid input')
+
+    # We didn't validate the geoposition above, so do it now
+    geoposition = request.POST.get('geoposition', '')  # TODO: don't hardcode field name
+    geoposition_required = config.VOLUNTEER_FIELDS.joined_latlong.required
+    if not utils.latlong_validator(geoposition, geoposition_required):
+        webapp2.abort(400, detail='invalid input')
+    geoaddress = helpers.address_from_latlong(geoposition)
+
+    # Set the GUID field
+    volunteer[config.VOLUNTEER_FIELDS.id.name] = str(uuid.uuid4())
+    # Set the timestamps
+    volunteer[config.VOLUNTEER_FIELDS.joined.name] = utils.current_datetime()
+    volunteer[config.VOLUNTEER_FIELDS.joined_by.name] = actor
+    volunteer[config.VOLUNTEER_FIELDS.joined_latlong.name] = geoposition
+    volunteer[config.VOLUNTEER_FIELDS.joined_address.name] = geoaddress
+
+    volunteer[config.VOLUNTEER_FIELDS.address_latlong.name] = \
+        helpers.latlong_for_record(config.VOLUNTEER_FIELDS, volunteer)
+
+    return volunteer
+
+
+def _update_record(fields, list_entry, update_dict):
     """Updates the spreadsheet entry for `list_entry` with the data in
     `update_dict`. Also modifies/fills in `update_dict` with data from
     `list_entry`.
@@ -145,7 +199,7 @@ def _update_member(list_entry, update_dict):
 
     # Update the values in list_entry
     for name, value in list_entry.to_dict().items():
-        field = (f for f in config.MEMBER_FIELDS if f.name == name).next()
+        field = (f for f in fields if f.name == name).next()
         if field.mutable and update_dict.get(name) is not None:
             list_entry.set_value(name, update_dict.get(name))
         else:
@@ -168,13 +222,17 @@ def join_or_renew_member_from_dict(member_dict):
         # Check if this member email already exists
         querystring = '%s=="%s"' % (config.MEMBER_FIELDS.email.name,
                                     member_dict.get(config.MEMBER_FIELDS.email.name))
-        conflict_list_entry = _get_single_list_entry(querystring)
+        conflict_list_entry = _get_single_list_entry(querystring,
+                                                     config.MEMBERS_SPREADSHEET_KEY,
+                                                     config.MEMBERS_WORKSHEET_KEY)
 
     if conflict_list_entry:
-        _update_member(conflict_list_entry, member_dict)
+        _update_record(config.MEMBER_FIELDS, conflict_list_entry, member_dict)
         return 'renew'
     else:
-        _add_new_row(member_dict)
+        _add_new_row(member_dict,
+                     config.MEMBERS_SPREADSHEET_KEY,
+                     config.MEMBERS_WORKSHEET_KEY)
         return 'join'
 
 
@@ -189,12 +247,14 @@ def renew_member_from_dict(member_dict):
     # and the ID is numeric, the match will fail. Dumb.
     querystring = '%s==%s' % (config.MEMBER_FIELDS.id.name,
                               member_dict[config.MEMBER_FIELDS.id.name])
-    list_entry = _get_single_list_entry(querystring)
+    list_entry = _get_single_list_entry(querystring,
+                                        config.MEMBERS_SPREADSHEET_KEY,
+                                        config.MEMBERS_WORKSHEET_KEY)
 
     if not list_entry:
         webapp2.abort(400, detail='user ID lookup failed')
 
-    _update_member(list_entry, member_dict)
+    _update_record(config.MEMBER_FIELDS, list_entry, member_dict)
 
 
 def renew_member_by_email_or_paypal_id(email, paypal_payer_id, member_dict):
@@ -209,7 +269,9 @@ def renew_member_by_email_or_paypal_id(email, paypal_payer_id, member_dict):
                     email,
                     config.MEMBER_FIELDS.paypal_email.name,
                     email)
-    list_entry = _get_single_list_entry(querystring)
+    list_entry = _get_single_list_entry(querystring,
+                                        config.MEMBERS_SPREADSHEET_KEY,
+                                        config.MEMBERS_WORKSHEET_KEY)
 
     # TODO: Refactor this duplication
     member_dict[config.MEMBER_FIELDS.renewed.name] = utils.current_datetime()
@@ -220,19 +282,41 @@ def renew_member_by_email_or_paypal_id(email, paypal_payer_id, member_dict):
     # HACK: In theory we should be updating the address geoposition here. But
     # we "know" that the address isn't changing. Make sure this is better when
     # we refactor this stuff.
-    #member_dict[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_member(member_dict)
+    #member_dict[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_record(config.MEMBER_FIELDS, member_dict)
 
     if list_entry:
-        _update_member(list_entry, member_dict)
+        _update_record(config.MEMBER_FIELDS, list_entry, member_dict)
         return True
 
     return False
 
 
+def join_volunteer_from_dict(volunteer_dict):
+    """Add the new volunteer.
+    `volunteer_dict` will be modified with actual data.
+    """
+
+    conflict_list_entry = None
+    if volunteer_dict.get(config.VOLUNTEER_FIELDS.email.name):
+        # Check if this volunteer email already exists
+        querystring = '%s=="%s"' % (config.VOLUNTEER_FIELDS.email.name,
+                                    volunteer_dict.get(config.VOLUNTEER_FIELDS.email.name))
+        conflict_list_entry = _get_single_list_entry(querystring,
+                                                     config.VOLUNTEERS_SPREADSHEET_KEY,
+                                                     config.VOLUNTEERS_WORKSHEET_KEY)
+
+    if conflict_list_entry:
+        _update_record(config.VOLUNTEER_FIELDS, conflict_list_entry, volunteer_dict)
+    else:
+        _add_new_row(volunteer_dict,
+                     config.VOLUNTEERS_SPREADSHEET_KEY,
+                     config.VOLUNTEERS_WORKSHEET_KEY)
+
+
 def get_volunteer_interests():
-    rows = _get_all_rows(config.VOLUNTEER_SPREADSHEET_KEY,
-                         config.VOLUNTEER_WORKSHEET_KEY)
-    res = [row[config.VOLUNTEER_FIELDS.interest.name] for row in rows]
+    rows = _get_all_rows(config.VOLUNTEER_INTERESTS_SPREADSHEET_KEY,
+                         config.VOLUNTEER_INTERESTS_WORKSHEET_KEY)
+    res = [row[config.VOLUNTEER_INTEREST_FIELDS.interest.name] for row in rows]
     return set(res)
 
 
@@ -264,8 +348,8 @@ def authorize_new_user(request, user):
     querystring = '%s=="%s"' % (config.AUTHORIZED_FIELDS.email.name,
                                 request.POST.get(config.AUTHORIZED_FIELDS.email.name))
     existing_user = _get_single_list_entry(querystring,
-                                           spreadsheet_key=config.AUTHORIZED_SPREADSHEET_KEY,
-                                           worksheet_key=config.AUTHORIZED_WORKSHEET_KEY)
+                                           config.AUTHORIZED_SPREADSHEET_KEY,
+                                           config.AUTHORIZED_WORKSHEET_KEY)
     if existing_user:
         # This causes the request processing to stop
         webapp2.abort(400, detail='user email address already authorized')
@@ -277,8 +361,8 @@ def authorize_new_user(request, user):
     new_user[config.AUTHORIZED_FIELDS.created_by.name] = user.email()
 
     _add_new_row(new_user,
-                 spreadsheet_key=config.AUTHORIZED_SPREADSHEET_KEY,
-                 worksheet_key=config.AUTHORIZED_WORKSHEET_KEY)
+                 config.AUTHORIZED_SPREADSHEET_KEY,
+                 config.AUTHORIZED_WORKSHEET_KEY)
 
 
 def send_email(to_address, to_name, subject, body_html):
@@ -322,8 +406,8 @@ def get_volunteer_interest_reps_for_member(member_data):
     Returns {} if no reps found.
     """
 
-    all_reps = _get_all_rows(config.VOLUNTEER_SPREADSHEET_KEY,
-                             config.VOLUNTEER_WORKSHEET_KEY)
+    all_reps = _get_all_rows(config.VOLUNTEER_INTERESTS_SPREADSHEET_KEY,
+                             config.VOLUNTEER_INTERESTS_WORKSHEET_KEY)
 
     member_interests = member_data.get(config.MEMBER_FIELDS.volunteer_interests.name, '')\
                                   .split(config.MULTIVALUE_DIVIDER)
@@ -488,9 +572,7 @@ def _get_all_rows(spreadsheet_key, worksheet_key, sort_name=None):
     return [entry.to_dict() for entry in list_feed.entry]
 
 
-def _add_new_row(row_dict,
-                 spreadsheet_key=config.MEMBERS_SPREADSHEET_KEY,
-                 worksheet_key=config.MEMBERS_WORKSHEET_KEY):
+def _add_new_row(row_dict, spreadsheet_key, worksheet_key):
 
     entry = ListEntry()
     entry.from_dict(row_dict)
@@ -502,9 +584,7 @@ def _add_new_row(row_dict,
                                 worksheet_key)
 
 
-def _get_single_list_entry(querystring,
-                           spreadsheet_key=config.MEMBERS_SPREADSHEET_KEY,
-                           worksheet_key=config.MEMBERS_WORKSHEET_KEY):
+def _get_single_list_entry(querystring, spreadsheet_key, worksheet_key):
     """Returns a matching ListEntry or None if not found.
     """
 
@@ -591,7 +671,7 @@ def _update_all_members_address_latlong():
         if member_dict.get(config.MEMBER_FIELDS.address_latlong.name):
             continue
 
-        latlong = helpers.latlong_for_member(member_dict)
+        latlong = helpers.latlong_for_record(config.MEMBER_FIELDS, member_dict)
 
         if not latlong:
             continue

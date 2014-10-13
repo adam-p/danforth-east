@@ -9,7 +9,10 @@ $(function() {
   var g_members = null; // to by set by fillMembersList
   fillMembersList();
 
-  DECA.setupMemberFormSubmit('renew', '#renewMemberForm', '#submitRenewMember');
+  DECA.setupMemberFormSubmit('renew',
+                             '#renewMember form',
+                             '#renewMember .waitModal',
+                             '#renewMember button[type="submit"]');
 
   $('#membersFilter').keypress(function(event) {
     // On phones/tablets, when the user hits the "Go" button, we want the
@@ -94,7 +97,7 @@ $(function() {
   }
 
   function fillMemberForm(member) {
-    var $form = $('#renewMemberForm');
+    var $form = $('#renewMember form');
 
     $form.data('bootstrapValidator').resetForm(true);
 

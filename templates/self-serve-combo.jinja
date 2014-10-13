@@ -10,7 +10,10 @@
 {% block content %}
 
 {% import 'imports/self-serve-join-form.jinja' as member_form %}
+{% import 'imports/self-serve-volunteer-form.jinja' as volunteer_form %}
+
 {{ member_form.self_serve_join_form(FIELDS, csrf, volunteer_interests, config) }}
+{{ volunteer_form.self_serve_volunteer_form(FIELDS, csrf, volunteer_interests) }}
 
 {% endblock content %}
 
@@ -24,4 +27,6 @@
 {% block pagescript_file %}
 <script src="/vendor/iframeResizer/iframeResizer.contentWindow.min.js"></script>
 <script src="/js/self-serve-join.js"></script>
+<script src="/js/self-serve-volunteer.js"></script>
+<script src="/js/self-serve-combo.js"></script>
 {% endblock %}

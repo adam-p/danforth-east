@@ -36,6 +36,9 @@ handlers:
 - url: /vendor
   static_dir: static/vendor
   secure: always
+- url: /files
+  static_dir: static/files
+  secure: always
 
 # Admin interface, like the one available via the SDK
 - url: /admin/.*

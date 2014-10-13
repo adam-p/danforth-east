@@ -1,0 +1,192 @@
+{% import 'imports/form-field.jinja' as form_field %}
+
+{% macro member_form_fields(create_or_renew_or_self_serve, fields, csrf, volunteer_interests) -%}
+
+  {% set bv_common = 'data-bv-message="This value is not valid" data-bv-notempty-message="This value is required" data-bv-emailaddress-message="This value is not a valid email address" ' %}
+
+  {# If the member is filling the form out on their own device (i.e., in 'self-serve'
+     mode), then it makes sense to autocomplete fields. But if the member (or
+     DECA rep) is filling the form out at, say, the Farmers' Market on a device
+     that's there for that reason, then autocomplete will be useless and
+     distracting. #}
+  {% set autocomplete = 'on' if create_or_renew_or_self_serve == 'self-serve' else 'off' %}
+
+  {% macro my_form_field(field, type='text', value='', placeholder='') -%}
+    {{ form_field.input(field, type=type, value=value, placeholder=placeholder,
+                               attrs=bv_common, autocomplete=autocomplete) }}
+  {%- endmacro %}
+
+  <style>
+    .joinLocationLabel {
+      vertical-align: super;
+    }
+  </style>
+
+  <input name="{{fields.member.id.name}}" type="hidden" class="hidden" />
+  <input name="csrf" type="hidden" class="hidden" value="{{csrf}}" />
+
+  <fieldset>
+    <legend>Name</legend>
+
+    <div class="row">
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.first_name) }}
+      </div>
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.last_name) }}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.email,
+                         type='email',
+                         placeholder='hello@example.com') }}
+      </div>
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.phone_num) }}
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Address</legend>
+
+    <div class="row">
+      <div class="col-sm-3">
+        {{ my_form_field(fields.member.apt_num) }}
+      </div>
+      <div class="col-sm-3">
+        {{ my_form_field(fields.member.street_num) }}
+      </div>
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.street_name) }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.city, value='Toronto') }}
+      </div>
+      <div class="col-sm-6">
+        {{ my_form_field(fields.member.postal_code) }}
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Miscellaneous</legend>
+
+    <div class="row">
+      <div class="col-sm-12">
+        {{ my_form_field(fields.member.family_names,
+                         placeholder='Jill, Jack, Gretel, Hansel') }}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-12">
+        <label class="joinLocationLabel {{ 'required' if fields.member.join_location.required else '' }}">
+            Joined at Farmers' Market:&nbsp;
+        </label>
+        <div class="form-group btn-group" data-toggle="buttons">
+          <label class="btn btn-default btn-lg">
+            <input type="radio" name="{{ fields.member.join_location.name }}" value="farmers-market">yes
+          </label>
+          <label class="btn btn-default btn-lg active">
+            <input type="radio" name="{{ fields.member.join_location.name }}" value="" checked>no
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-12">
+        <label class="{{ 'required' if fields.member.volunteer_interests.required else '' }}">
+          We base our success on our volunteers. Let us know if you would like to volunteer for any of the following committees:
+        </label>
+        <div class="form-group">
+
+          <div class="row">
+            {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
+            {% for volunteer_interest in volunteer_interests %}
+              <div class="col-md-4">
+                <div class="input-group input-group-lg checkbox-group">
+                  <span class="input-group-addon">
+                    <i class="fa fa-fw fa-square-o"
+                       data-unchecked-icon="fa-square-o"
+                       data-checked-icon="fa-check-square-o"></i>
+                  </span>
+                  <input type="checkbox"
+                         class="hidden"
+                         name="{{ fields.member.volunteer_interests.name }}"
+                         value="{{ volunteer_interest }}">
+                  <span class="form-control">{{ volunteer_interest }}</span>
+                </div>
+              </div>
+              {% if loop.index is divisibleby(3) %}
+                </div>
+                <div class="row">
+              {% endif %}
+            {% endfor %}
+          </div>
+
+        </div><!-- form-group -->
+      </div>
+    </div><!-- /row -->
+
+    <div class="row">
+      <div class="col-sm-12">
+        <label class="{{ 'required' if fields.member.skills.required else '' }}">
+          We need help from people with any of the following skills:
+        </label>
+        <div class="form-group">
+
+          <div class="row">
+            {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
+            {% for skill in fields.member.skills.values %}
+              <div class="col-md-4">
+                <div class="input-group input-group-lg checkbox-group">
+                  <span class="input-group-addon">
+                    <i class="fa fa-fw fa-square-o"
+                       data-unchecked-icon="fa-square-o"
+                       data-checked-icon="fa-check-square-o"></i>
+                  </span>
+                  <input type="checkbox"
+                         class="hidden"
+                         name="{{ fields.member.skills.name }}"
+                         value="{{ skill }}">
+                  <span class="form-control">{{ skill }}</span>
+                </div>
+              </div>
+              {% if loop.index is divisibleby(3) %}
+                </div>
+                <div class="row">
+              {% endif %}
+            {% endfor %}
+          </div>
+
+        </div><!-- form-group -->
+      </div>
+    </div><!-- /row -->
+
+    {% if create_or_renew_or_self_serve != 'self-serve' %}
+      <div class="row">
+        <div class="col-sm-12">
+          <label>
+              Membership dues paid:&nbsp;
+          </label>
+          <div class="form-group btn-group" data-toggle="buttons">
+            <label class="btn btn-default btn-lg active">
+              <input type="radio" name="{{ fields.member.paid.name }}" value="at-registration" checked>yes
+            </label>
+            <label class="btn btn-default btn-lg">
+              <input type="radio" name="{{ fields.member.paid.name }}" value="N">no
+            </label>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+  </fieldset>
+
+{%- endmacro %}

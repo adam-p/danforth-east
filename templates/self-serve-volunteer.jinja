@@ -1,6 +1,6 @@
 {% extends "base.jinja" %}
 
-{% set page_title = 'Join DECA' %}
+{% set page_title = 'Become a friend of DECA' %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -9,8 +9,8 @@
 
 {% block content %}
 
-{% import 'imports/self-serve-join-form.jinja' as member_form %}
-{{ member_form.self_serve_join_form(FIELDS, csrf, volunteer_interests, config) }}
+{% import 'imports/self-serve-volunteer-form.jinja' as volunteer_form %}
+{{ volunteer_form.self_serve_volunteer_form(FIELDS, csrf, volunteer_interests) }}
 
 {% endblock content %}
 
@@ -18,10 +18,10 @@
 {% block footer %}{% endblock %}
 
 {% block pagestyles_file %}
-<link rel="stylesheet" href="/css/self-serve-join.css">
+<link rel="stylesheet" href="/css/self-serve-volunteer.css">
 {% endblock %}
 
 {% block pagescript_file %}
 <script src="/vendor/iframeResizer/iframeResizer.contentWindow.min.js"></script>
-<script src="/js/self-serve-join.js"></script>
+<script src="/js/self-serve-volunteer.js"></script>
 {% endblock %}

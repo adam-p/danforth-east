@@ -6,5 +6,8 @@
 $(function() {
   "use strict";
 
-  DECA.setupMemberFormSubmit('create', '#newMemberForm', '#submitNewMember');
+  DECA.setupMemberFormSubmit('create',
+                             '#newMember form',
+                             '#newMember .waitModal',
+                             '#newMember button[type="submit"]');
 });

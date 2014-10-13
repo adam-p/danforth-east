@@ -1,0 +1,80 @@
+{% import 'imports/volunteer-form-fields.jinja' as volunteer_form_fields %}
+
+{% macro self_serve_volunteer_form(fields, csrf, volunteer_interests) -%}
+
+<div id="newVolunteer">
+
+  {# TODO: don't hardcode action #}
+  <form action="/self-serve/volunteer" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
+
+    {{ volunteer_form_fields.volunteer_form_fields('self-serve', fields, csrf, volunteer_interests) }}
+
+    <div class="row">
+
+      <div class="col-md-12 submit-btns text-center">
+        <button name="submit" value="submit"
+                type="submit" class="btn btn-lg btn-primary">
+          Submit
+        </button>
+      </div>
+
+    </div>
+
+  </form>
+
+  <!-- Modal -->
+  <div class="waitModal modal fade" tabindex="-1" role="dialog"
+       aria-labelledby="newVolunteer-waitModalLabel" aria-hidden="true"
+       data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="newVolunteer-waitModalLabel">
+            Registering you as a volunteer...
+          </h4>
+        </div>
+        <div class="modal-body">
+          <div class="success-hide error-hide reset-show">
+            {% include 'imports/spinner.jinja' %}
+          </div>
+          <div class="success-hide error-show reset-hide hidden">
+            <div class="alert alert-danger" role="alert">
+              <p>
+                <strong>Doh!</strong>
+                Volunteer creation request failed.
+              </p>
+              <p class="waitModalServerMessage">
+              </p>
+              <p class="hidden retry-show">
+                It appears that our server hiccuped. Hit the Retry button and see if it has sorted itself out.
+              </p>
+            </div>
+          </div>
+          <div class="success-show error-hide reset-hide hidden">
+            <div class="alert alert-success" role="alert">
+              <p>
+                <strong>Yay!</strong>
+              </p>
+              <div>
+                <p>
+                  You have been successfully registered. You should receive a welcome email shortly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer success-hide error-show reset-hide hidden">
+          <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+          <button type="button" class="waitModalRetry btn btn-primary btn-lg retry-show hidden">Retry</button>
+        </div>
+        <div class="modal-footer error-hide success-show">
+          <a href="#" target="_top" class="doneBtn btn btn-primary btn-lg" role="button">Done!</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /Modal -->
+
+</div><!-- /#newVolunteer -->
+
+{%- endmacro %}

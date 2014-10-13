@@ -76,19 +76,25 @@
 
 <hr>
 
-{% import 'imports/member-form.jinja' as member_form %}
+{% import 'imports/member-form-fields.jinja' as member_form_fields %}
 
 <div id="reviewRenew" class="invisible">
 
   <h2>Review and Renew</h2>
 
-  <form id="renewMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
+  <div id="renewMember">
+    {# TODO: don't hardcode action #}
+    <form action="/renew-member" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-    {{ member_form.member_form('renew', FIELDS, csrf_token, volunteer_interests) }}
+      {{ member_form_fields.member_form_fields('renew', FIELDS, csrf, volunteer_interests) }}
 
-    <button id="submitRenewMember" type="submit" class="btn btn-lg btn-primary">Renew DECA membership!</button>
+      <button type="submit" class="btn btn-lg btn-primary">Renew DECA membership!</button>
 
-  </form>
+    </form>
+
+    {% import 'imports/wait-modal.jinja' as wait_modal %}
+    {{ wait_modal.wait_modal('renew', None) }}
+  </div>
 
 </div>
 

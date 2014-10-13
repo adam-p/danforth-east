@@ -80,21 +80,23 @@ def set_csrf_cookie(response, csrf_token):
                         expires=datetime.datetime.now()+datetime.timedelta(7))
 
 
-def latlong_for_member(member_dict):
-    """Get a "latitude, longitude" string for the address of the given member.
+def latlong_for_record(fields, record_dict):
+    """Get a "latitude, longitude" string for the address of the given record.
+    `fields` should be config.MEMBER_FIELDS or config.VOLUNTEER_FIELDS -- i.e.,
+    something with appropriate address components.
     Returns empty string if geocoding is not possible.
     """
 
-    if not member_dict.get(config.MEMBER_FIELDS.street_name.name):
+    if not record_dict.get(fields.street_name.name):
         # If we don't have a street name, just give up
         return ''
 
     address_components = [
-        member_dict.get(config.MEMBER_FIELDS.street_num.name),
-        member_dict.get(config.MEMBER_FIELDS.street_name.name),
-        member_dict.get(config.MEMBER_FIELDS.city.name) or 'Toronto',
+        record_dict.get(fields.street_num.name),
+        record_dict.get(fields.street_name.name),
+        record_dict.get(fields.city.name) or 'Toronto',
         'Ontario',
-        member_dict.get(config.MEMBER_FIELDS.postal_code.name),
+        record_dict.get(fields.postal_code.name),
         'Canada',
     ]
 

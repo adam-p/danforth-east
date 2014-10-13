@@ -1,0 +1,17 @@
+/*
+ * Copyright Adam Pritchard 2014
+ * MIT License : http://adampritchard.mit-license.org/
+ */
+
+.submit-btns table {
+  width: 100%;
+}
+
+.submit-btns td {
+  width: 50%;
+  padding: 5px;
+}
+
+.submit-btns .payment-intro {
+  font-size: 1.4em;
+}

@@ -10,15 +10,8 @@
   <h1>{{ page_title }} <small class="hidden-xs">Welcome to DECA!</small></h1>
 </div>
 
-{% import 'imports/member-form.jinja' as member_form %}
-
-<form id="newMemberForm" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
-
-  {{ member_form.member_form('create', FIELDS, csrf_token, volunteer_interests) }}
-
-  <button id="submitNewMember" type="submit" class="btn btn-lg btn-primary">Join DECA!</button>
-
-</form>
+{% import 'imports/new-member-form.jinja' as member_form %}
+{{ member_form.member_form(FIELDS, csrf, volunteer_interests) }}
 
 {% endblock content %}
 

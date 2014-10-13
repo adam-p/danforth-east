@@ -1,0 +1,121 @@
+{% macro self_serve_join_form(fields, csrf, volunteer_interests, config) -%}
+
+{% import 'imports/member-form-fields.jinja' as member_form_fields %}
+
+<div id="newMember">
+  {# TODO: don't hardcode action #}
+  <form action="/self-serve/join" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
+
+    {{ member_form_fields.member_form_fields('self-serve', fields, csrf, volunteer_interests) }}
+
+    <div class="row">
+
+      <div class="col-md-12 submit-btns text-center">
+        <input type="hidden" name="payment_method">
+        <table>
+          <tbody>
+            <tr>
+              <td colspan="2" class="payment-intro">
+                <strong>Join or renew your membership using one of these options:</strong>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Pay now with PayPal</strong></td>
+              <td><strong>Pay later by cash or cheque</strong></td>
+            </tr>
+            <tr>
+              <td>
+                <input name="submit" value="paypal" type="image"
+                       alt="PayPal - The safer, easier way to pay online!"
+                       src="https://www.paypalobjects.com/en_US/i/btn/btn_paynowCC_LG.gif">
+              </td>
+              <td>
+                <button name="submit" value="cheque"
+                        type="submit" class="btn btn-lg btn-primary">
+                  Pay Later
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table border="0" cellpadding="10" cellspacing="0" align="center"><tr><td align="center"></td></tr><tr><td align="center"><a href="https://www.paypal.com/ca/webapps/mpp/paypal-popup" title="How PayPal Works" onclick="javascript:window.open('https://www.paypal.com/ca/webapps/mpp/paypal-popup','WIPaypal','toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700'); return false;"><img src="https://www.paypalobjects.com/webstatic/en_CA/mktg/logo-image/bdg_payments_by_pp_2line.png" border="0" alt="Secured by PayPal"></a><div style="text-align:center"><a href="https://www.paypal.com/ca/webapps/mpp/how-paypal-works"><font size="2" face="Arial" color="#0079CD">How PayPal Works</font></a></div></td></tr></table>
+              </td>
+              <td>
+                Mail or hand-deliver your {{ config.MEMBERSHIP_FEE_DISPLAY }} payment to:
+                <address>
+                  {{ config.ORGANIZATION_MAILING_ADDRESS_HTML|safe }}
+                </address>
+                Cheques should be payable to "{{ config.ORGANIZATION_CHEQUES_PAYABLE_NAME }}".<br>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </form>
+
+  <!-- Modal -->
+  <div class="waitModal modal fade" tabindex="-1" role="dialog" aria-labelledby="newMember-waitModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title" id="newMember-waitModalLabel">
+            Registering your membership...
+          </h4>
+        </div>
+        <div class="modal-body">
+          <div class="success-hide error-hide reset-show">
+            {% include 'imports/spinner.jinja' %}
+          </div>
+          <div class="success-hide error-show reset-hide hidden">
+            <div class="alert alert-danger" role="alert">
+              <p>
+                <strong>Doh!</strong>
+                Member creation request failed.
+              </p>
+              <p class="waitModalServerMessage">
+              </p>
+              <p class="hidden retry-show">
+                It appears that our server hiccuped. Hit the Retry button and see if it has sorted itself out.
+              </p>
+            </div>
+          </div>
+          <div class="success-show error-hide reset-hide hidden">
+            <div class="alert alert-success" role="alert">
+              <p>
+                <strong>Yay!</strong>
+              </p>
+              <div class="show-paypal">
+                <p>
+                  First step of registration complete. Now sending you to PayPal...
+                </p>
+                <p class="text-center">
+                  <a class="waitModalRedirectLink" href="#" target="_top">
+                    <img src="https://www.paypalobjects.com/webstatic/en_CA/mktg/logo-image/pp_cc_mark_111x69.jpg" style="height: 4em;">
+                  </a>
+                </p>
+              </div>
+              <div class="show-cheque">
+                <p>
+                  You have been successfully registered. You should receive a welcome email shortly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer success-hide error-show reset-hide hidden">
+          <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+          <button type="button" class="waitModalRetry btn btn-primary btn-lg retry-show hidden">Retry</button>
+        </div>
+        <div class="modal-footer error-hide show-cheque hidden">
+          <a href="#" target="_top" class="doneBtn btn btn-primary btn-lg" role="button">Done!</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /Modal -->
+</div>
+
+{%- endmacro %}

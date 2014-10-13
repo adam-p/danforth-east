@@ -89,24 +89,25 @@
   // Public method
   _this.setupMemberFormSubmit = function(form_mode, // 'create', 'renew', 'self-serve'
                                          form,
+                                         modal,
                                          submit) {
-    var curriedOnSubmitMember = _.curry(onSubmitMember)(form_mode, $(form));
+    var curriedOnSubmitMember = _.curry(onSubmitMember)(form_mode, $(form), $(modal));
 
     $(form).bootstrapValidator();
     $(submit).click(curriedOnSubmitMember);
 
     // Force the postal code to uppercase
-    $('[data-bv-zipcode]').keyup(function() {
+    $(form).find('[data-bv-zipcode]').keyup(function() {
       var val = $(this).val();
       if (val) {
         $(this).val(val.toUpperCase());
       }
     });
 
-    _this.setupWaitModal(curriedOnSubmitMember);
+    _this.setupWaitModal($(modal), curriedOnSubmitMember);
 
     if (form_mode !== 'self-serve' && // if we're not 'self-serve' mode...
-        Modernizr.geolocation) {    // and the geolocation service is available...
+        Modernizr.geolocation) {      // and the geolocation service is available...
       // ...get our location.
       navigator.geolocation.getCurrentPosition(
         function(result) {
@@ -126,14 +127,23 @@
     }
   };
 
-  function onSubmitMember(form_mode, $form, event) {
+  // Public method
+  _this.setupVolunteerFormSubmit = function(form_mode, // 'create', 'renew', 'self-serve'
+                                            form,
+                                            modal,
+                                            submit) {
+    // Some day there might be special/different processing, but for now...
+    _this.setupMemberFormSubmit(form_mode, form, modal, submit);
+  };
+
+  function onSubmitMember(form_mode, $form, $modal, event) {
     if (event) {
       event.preventDefault();
     }
 
     $form.data('bootstrapValidator').validate();
     if (!$form.data('bootstrapValidator').isValid()) {
-      var $badElems = $('.has-error');
+      var $badElems = $form.find('.has-error');
       $badElems.eq(0).find('input').focus();
       $('html, body').animate({
         scrollTop: $badElems.eq(0).offset().top
@@ -145,7 +155,7 @@
     }
 
     // Do a little extra work to format the postal code
-    $('[data-bv-zipcode]').each(function() {
+    $form.find('[data-bv-zipcode]').each(function() {
       var val = $(this).val();
       if (val) {
         val = val.toUpperCase().replace(/(\w{3})(\w{3})/, '$1 $2');
@@ -174,17 +184,17 @@
       data['_referrer'] = document.referrer;
     }
 
-    _this.waitModalShow();
+    _this.waitModalShow($modal);
 
-    var jqxhr = $.post('', data)
+    var jqxhr = $.post($form.attr('action'), data)
         .done(function() {
           console.log('success', arguments);
-          _this.waitModalSuccess();
+          _this.waitModalSuccess($modal);
 
           if (form_mode === 'self-serve' && jqxhr.responseText !== 'success') {
             // The server gave us a Paypal URL to go to. Redirect there.
             // TODO: move this into self-serve-join.js
-            $('#waitModalRedirectLink').prop('href', jqxhr.responseText);
+            $modal.find('.waitModalRedirectLink').prop('href', jqxhr.responseText);
             window.top.location = jqxhr.responseText;
           }
         })
@@ -205,7 +215,7 @@
             conflict_email = data['email'];
           }
 
-          _this.waitModalError(jqxhr.statusText, jqxhr.responseText,
+          _this.waitModalError($modal, jqxhr.statusText, jqxhr.responseText,
                                retry, conflict_email);
         });
     console.log('jqxhr', jqxhr);
@@ -229,59 +239,58 @@
   // Wait modal functions
   //
 
-  _this.setupWaitModal = function(resubmitFn) {
-    $('#waitModalRetry').click(function(event) {
-      _this.waitModalReset();
+  _this.setupWaitModal = function($modal, resubmitFn) {
+    $modal.find('.waitModalRetry').click(function(event) {
+      _this.waitModalReset($modal);
       return resubmitFn(event);
     });
   };
 
-  _this.waitModalShow = function() {
-    _this.waitModalReset();
-    $('#waitModal').modal();
+  _this.waitModalShow = function($modal) {
+    _this.waitModalReset($modal);
+    $modal.modal();
   };
 
-  _this.waitModalSuccess = function() {
-    $('#waitModal .success-show').removeClass('hidden');
-    $('#waitModal .success-hide').addClass('hidden');
+  _this.waitModalSuccess = function($modal) {
+    $modal.find('.success-show').removeClass('hidden');
+    $modal.find('.success-hide').addClass('hidden');
   };
 
-  // TODO: Refactor this into something more sane.
-  _this.waitModalError = function(statusText, responseText,
+  _this.waitModalError = function($modal, statusText, responseText,
                                   retry, conflict_email) {
-    $('#waitModal .error-show').removeClass('hidden');
-    $('#waitModal .error-hide').addClass('hidden');
+    $modal.find('.error-show').removeClass('hidden');
+    $modal.find('.error-hide').addClass('hidden');
 
     if (conflict_email) {
-      var href = $('#waitModal #waitModalRenew').attr('href');
-      $('#waitModal #waitModalRenew').data('original-href', href);
+      var href = $modal.find('.waitModalRenew').attr('href');
+      $modal.find('.waitModalRenew').data('original-href', href);
       href += '#' + encodeURIComponent(conflict_email);
-      $('#waitModal #waitModalRenew').prop('href', href);
+      $modal.find('.waitModalRenew').prop('href', href);
 
-      $('#waitModal .conflict-email-show').removeClass('hidden');
-      $('#waitModal .conflict-email-hide').addClass('hidden');
+      $modal.find('.conflict-email-show').removeClass('hidden');
+      $modal.find('.conflict-email-hide').addClass('hidden');
     }
     else {
-      $('#waitModal #waitModalServerMessage').text(statusText + ': ' + responseText);
+      $modal.find('.waitModalServerMessage').text(statusText + ': ' + responseText);
 
       if (retry) {
-        $('#waitModal .retry-show').removeClass('hidden');
-        $('#waitModal .retry-hide').addClass('hidden');
+        $modal.find('.retry-show').removeClass('hidden');
+        $modal.find('.retry-hide').addClass('hidden');
       }
       else {
-        $('#waitModal .retry-show').addClass('hidden');
-        $('#waitModal .retry-hide').removeClass('hidden');
+        $modal.find('.retry-show').addClass('hidden');
+        $modal.find('.retry-hide').removeClass('hidden');
       }
     }
   };
 
-  _this.waitModalReset = function() {
-    $('#waitModal .reset-hide').addClass('hidden');
-    $('#waitModal .reset-show').removeClass('hidden');
+  _this.waitModalReset = function($modal) {
+    $modal.find('.reset-hide').addClass('hidden');
+    $modal.find('.reset-show').removeClass('hidden');
 
-    $('#waitModal #waitModalRenew').prop('href',
-      $('#waitModal #waitModalRenew').data('original-href'));
-    $('#waitModal #waitModalServerMessage').text('');
+    $modal.find('.waitModalRenew').prop('href',
+      $modal.find('.waitModalRenew').data('original-href'));
+    $modal.find('.waitModalServerMessage').text('');
   };
 
 
