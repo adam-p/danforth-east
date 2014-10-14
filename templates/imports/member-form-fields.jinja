@@ -16,12 +16,6 @@
                                attrs=bv_common, autocomplete=autocomplete) }}
   {%- endmacro %}
 
-  <style>
-    .joinLocationLabel {
-      vertical-align: super;
-    }
-  </style>
-
   <input name="{{fields.member.id.name}}" type="hidden" class="hidden" />
   <input name="csrf" type="hidden" class="hidden" value="{{csrf}}" />
 
@@ -85,7 +79,7 @@
 
     <div class="row">
       <div class="col-sm-12">
-        <label class="joinLocationLabel {{ 'required' if fields.member.join_location.required else '' }}">
+        <label class="{{ 'required' if fields.member.join_location.required else '' }}" style="vertical-align: super;">
             Joined at Farmers' Market:&nbsp;
         </label>
         <div class="form-group btn-group" data-toggle="buttons">
@@ -107,7 +101,8 @@
         <div class="form-group">
 
           <div class="row">
-            {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
+            {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly.
+               TODO: Improve that. #}
             {% for volunteer_interest in volunteer_interests %}
               <div class="col-md-4">
                 <div class="input-group input-group-lg checkbox-group">

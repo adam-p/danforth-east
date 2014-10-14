@@ -1,0 +1,14 @@
+/*
+ * Copyright Adam Pritchard 2014
+ * MIT License : http://adampritchard.mit-license.org/
+ */
+
+#newMember, #newVolunteer {
+  display: none;
+}
+
+.mode-chooser button {
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 0.5em;
+}

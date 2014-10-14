@@ -12,6 +12,19 @@
 {% import 'imports/self-serve-join-form.jinja' as member_form %}
 {% import 'imports/self-serve-volunteer-form.jinja' as volunteer_form %}
 
+<div class="row mode-chooser">
+  <div class="col-md-12 text-center">
+    <div class="btn-group-vertical">
+      <button type="button" class="btn btn-default" value="member">
+        Become a DECA Member
+      </button>
+      <button type="button" class="btn btn-default" value="volunteer">
+        Become a Friend of DECA
+      </button>
+    </div>
+  </div>
+</div>
+
 {{ member_form.self_serve_join_form(FIELDS, csrf, volunteer_interests, config) }}
 {{ volunteer_form.self_serve_volunteer_form(FIELDS, csrf, volunteer_interests) }}
 
@@ -22,6 +35,8 @@
 
 {% block pagestyles_file %}
 <link rel="stylesheet" href="/css/self-serve-join.css">
+<link rel="stylesheet" href="/css/self-serve-volunteer.css">
+<link rel="stylesheet" href="/css/self-serve-combo.css">
 {% endblock %}
 
 {% block pagescript_file %}

@@ -16,12 +16,6 @@
                                attrs=bv_common, autocomplete=autocomplete) }}
   {%- endmacro %}
 
-  <style>
-    .joinLocationLabel {
-      vertical-align: super;
-    }
-  </style>
-
   <input name="{{fields.volunteer.id.name}}" type="hidden" class="hidden" />
   <input name="csrf" type="hidden" class="hidden" value="{{csrf}}" />
 
@@ -78,7 +72,7 @@
 
     <div class="row">
       <div class="col-sm-12">
-        <label class="joinLocationLabel {{ 'required' if fields.volunteer.join_location.required else '' }}">
+        <label class="{{ 'required' if fields.volunteer.join_location.required else '' }}" style="vertical-align: super;">
             Joined at Farmers' Market:&nbsp;
         </label>
         <div class="form-group btn-group" data-toggle="buttons">
