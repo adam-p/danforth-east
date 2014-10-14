@@ -10,7 +10,7 @@
 {% block content %}
 
 {% import 'imports/self-serve-join-form.jinja' as member_form %}
-{{ member_form.self_serve_join_form(FIELDS, csrf, volunteer_interests, config) }}
+{{ member_form.self_serve_join_form(FIELDS, csrf_token, volunteer_interests, config) }}
 
 {% endblock content %}
 

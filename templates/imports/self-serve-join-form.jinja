@@ -1,4 +1,4 @@
-{% macro self_serve_join_form(fields, csrf, volunteer_interests, config) -%}
+{% macro self_serve_join_form(fields, csrf_token, volunteer_interests, config) -%}
 
 {% import 'imports/member-form-fields.jinja' as member_form_fields %}
 
@@ -6,7 +6,7 @@
   {# TODO: don't hardcode action #}
   <form action="/self-serve/join" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-    {{ member_form_fields.member_form_fields('self-serve', fields, csrf, volunteer_interests) }}
+    {{ member_form_fields.member_form_fields('self-serve', fields, csrf_token, volunteer_interests) }}
 
     <div class="row">
 

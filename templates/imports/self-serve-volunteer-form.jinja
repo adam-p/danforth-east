@@ -1,13 +1,13 @@
 {% import 'imports/volunteer-form-fields.jinja' as volunteer_form_fields %}
 
-{% macro self_serve_volunteer_form(fields, csrf, volunteer_interests) -%}
+{% macro self_serve_volunteer_form(fields, csrf_token, volunteer_interests) -%}
 
 <div id="newVolunteer">
 
   {# TODO: don't hardcode action #}
   <form action="/self-serve/volunteer" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-    {{ volunteer_form_fields.volunteer_form_fields('self-serve', fields, csrf, volunteer_interests) }}
+    {{ volunteer_form_fields.volunteer_form_fields('self-serve', fields, csrf_token, volunteer_interests) }}
 
     <div class="row">
 
