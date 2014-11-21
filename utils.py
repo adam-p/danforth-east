@@ -20,7 +20,7 @@ import dateutil.parser
 import config
 
 
-_no_spaces_re = re.compile('[^\w]')
+_no_spaces_re = re.compile('[^\w-]')
 
 
 def title_to_name(title):

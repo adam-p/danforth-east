@@ -13,6 +13,7 @@ import httplib2
 import webapp2
 import html2text
 import dateutil
+from dateutil.relativedelta import relativedelta
 
 from apiclient import errors
 from apiclient.discovery import build
@@ -23,16 +24,11 @@ from gdata.spreadsheets.data import ListEntry
 from gdata.spreadsheets.client import ListQuery
 from google.appengine.api import mail
 from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 
 import config
 import utils
 import helpers
-
-
-# Set the urlfetch timeout deadline longer. Sometimes it takes a while for
-# GData requests to complete.
-from google.appengine.api import urlfetch
-urlfetch.set_default_fetch_deadline(60)
 
 
 _gdata_client = None
@@ -49,7 +45,6 @@ def get_google_service_clients():
     if _gdata_client and _drive_service and _http:
         return (_gdata_client, _drive_service, _http)
 
-
     keyfile = open(config.SERVICE_ACCOUNT_PEM_FILE_PATH, 'rb')
     key = keyfile.read()
     keyfile.close()
@@ -65,6 +60,10 @@ def get_google_service_clients():
     _http = httplib2.Http()
     _http = credentials.authorize(_http)
     _drive_service = build('drive', 'v2', http=_http)
+
+    # Set the urlfetch timeout deadline longer. Sometimes it takes a while for
+    # GData requests to complete.
+    urlfetch.set_default_fetch_deadline(60)
 
     return _gdata_client, _drive_service, _http
 
@@ -199,7 +198,14 @@ def _update_record(fields, list_entry, update_dict):
 
     # Update the values in list_entry
     for name, value in list_entry.to_dict().items():
-        field = (f for f in fields if f.name == name).next()
+        field = next((f for f in fields if f.name == name), None)
+        if not field:
+            # Field in list entry is not found in config fields. This can
+            # happen if we have added a column to the spreadsheet that isn't
+            # yet in the deployed config.
+            logging.warning('field in spreadsheet not found in config')
+            continue
+
         if field.mutable and update_dict.get(name) is not None:
             list_entry.set_value(name, update_dict.get(name))
         else:
@@ -444,37 +450,22 @@ def cull_members_sheet():
     # running at the same time. Which would be bad. But improbable. Remember
     # that in a normal run there will be at most one member to delete.
 
-    gdata_client, _, _ = get_google_service_clients()
+    older_than = datetime.datetime.now() - relativedelta(years=2)
 
-    list_feed = gdata_client.get_list_feed(config.MEMBERS_SPREADSHEET_KEY,
-                                           config.MEMBERS_WORKSHEET_KEY)
+    cull_entries = _get_members_renewed_ago(None, older_than)
 
-    now = datetime.datetime.now()
+    if not cull_entries:
+        return
 
-    for entry in list_feed.entry:
-        entry_dict = entry.to_dict()
-        renewed_date = entry_dict.get(config.MEMBER_FIELDS.renewed.name)
+    for entry in cull_entries:
+        logging.info('cull_members_sheet: deleting: %s' % entry.to_dict())
+        _delete_list_entry(entry)
 
-        # Use Joined date if Renewed is empty
-        if not renewed_date:
-            renewed_date = entry_dict.get(config.MEMBER_FIELDS.joined.name)
+        # Queue up another call
+        taskqueue.add(url='/tasks/member-sheet-cull')
 
-        renewed_ago = datetime.timedelta.max
-        if renewed_date:
-            try:
-                renewed_ago = now - dateutil.parser.parse(renewed_date)
-            except:
-                pass
-
-        if renewed_ago.days > 800:  # two years and a bit
-            logging.info('cull_members_sheet: deleting: %s' % entry_dict)
-            _delete_list_entry(entry)
-
-            # Queue up another call
-            taskqueue.add(url='/tasks/member-sheet-cull')
-
-            # We've done one and queued up another -- stop
-            break
+        # We've done one and queued up another -- stop
+        break
 
 
 def archive_members_sheet(member_sheet_year):
@@ -496,6 +487,21 @@ def archive_members_sheet(member_sheet_year):
                      'Archive of the Members spreadsheet at the end of %d' % member_sheet_year)
 
     return year_now
+
+
+def get_members_expiring_soon():
+    """Returns a list of list-entries of members expiring soon.
+    """
+
+    # We want members whose membership will be expiring in a week. This means
+    # getting members who were last renewed one year and one week ago. We
+    # check daily, so we'll get members in a day-long window.
+    before_datetime = datetime.datetime.now() - relativedelta(years=1, days=6)
+    after_datetime = datetime.datetime.now() - relativedelta(years=1, days=7)
+
+    expiring_entries = _get_members_renewed_ago(after_datetime, before_datetime)
+
+    return expiring_entries or []
 
 
 #
@@ -654,6 +660,66 @@ def _copy_drive_file(file_id, new_title, description):
         transferOwnership=True,
         body={'role': 'owner'})
     req.execute()
+
+
+def _get_members_renewed_ago(after_datetime, before_datetime):
+    """Get the members who were last renewed within the given window.
+    Args:
+        after_datetime (datetime): Members must have been renewed *after* this
+            date. Optional.
+        before_datetime (datetime): Members must have been renewed *before*
+            this date. Optional.
+    Returns:
+        List of member list entries. (Caller can get dict with `.to_dict()`.)
+    """
+
+    # Note that dates get returned from the spreadsheet as locale-formatted
+    # strings, so we can't do a list-feed query to get just the rows we want.
+    # Instead we're going to have to go through the whole set and filter them
+    # from there.
+
+    assert(after_datetime or before_datetime)
+
+    gdata_client, _, _ = get_google_service_clients()
+
+    list_feed = gdata_client.get_list_feed(config.MEMBERS_SPREADSHEET_KEY,
+                                           config.MEMBERS_WORKSHEET_KEY)
+
+    results = []
+
+    for entry in list_feed.entry:
+        entry_dict = entry.to_dict()
+
+        renewed_date = entry_dict.get(config.MEMBER_FIELDS.renewed.name)
+
+        # Use Joined date if Renewed is empty
+        if not renewed_date:
+            renewed_date = entry_dict.get(config.MEMBER_FIELDS.joined.name)
+
+        # Convert date string to datetime
+        if renewed_date:
+            try:
+                renewed_date = dateutil.parser.parse(renewed_date)
+            except:
+                renewed_date = None
+
+        # If we still don't have a renewed date... the user is probably
+        # very old or invalid. Set the date to a long time ago, so it gets
+        # culled out.
+        if not renewed_date:
+            renewed_date = datetime.datetime(1970, 1, 1)
+
+        if after_datetime and not (after_datetime <= renewed_date):
+            continue
+
+        if before_datetime and not (before_datetime >= renewed_date):
+            continue
+
+        # If we passed those two checks, then it's a hit.
+
+        results.append(entry)
+
+    return results
 
 
 def _update_all_members_address_latlong():

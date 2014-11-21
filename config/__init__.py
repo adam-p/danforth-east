@@ -122,6 +122,7 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
                             'paypal_name',
                             'paypal_email',
                             'paypal_payer_id',
+                            'paypal_auto_renewing',
                             ])(
     Field('ID', validator=lambda *args: True, form_field=True, mutable=False),
     Field('Joined', validator=lambda *args: True, form_field=False, mutable=False),
@@ -150,6 +151,7 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Paypal Name', form_field=False),
     Field('Paypal Email', form_field=False),
     Field('Paypal Payer ID', form_field=False),
+    Field('Paypal Auto-Renewing', form_field=False),
 )
 
 

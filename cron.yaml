@@ -16,3 +16,8 @@ cron:
   url: /self-serve/expire-member-candidates
   schedule: every day 02:00
   timezone: America/Toronto
+
+- description: Email renewal reminders to members soon to expire
+  url: /tasks/renewal-reminder-emails
+  schedule: every day 02:00
+  timezone: America/Toronto

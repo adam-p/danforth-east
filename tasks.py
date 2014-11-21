@@ -218,11 +218,71 @@ class MemberSheetArchiveWorker(helpers.BaseHandler):
             settings.put()
 
 
+class RenewalReminderEmailsWorker(helpers.BaseHandler):
+    """Sends renewal reminder emails to members who are nearing their renewal
+    date.
+    """
+
+    def get(self):
+        logging.debug('RenewalReminderEmailsWorker hit')
+
+        expiring_entries = gapps.get_members_expiring_soon()
+        if not expiring_entries:
+            logging.debug('no expiring members')
+            return
+
+        logging.debug([x.to_dict() for x in expiring_entries])
+
+        template_values = {
+            'config': config,
+        }
+
+        with open('templates/tasks/email-renewal-reminder-subject.txt', 'r') as subject_file:
+            subject_noauto = subject_file.read().strip()
+        template_noauto = JINJA_ENVIRONMENT.get_template('tasks/email-renewal-reminder.jinja')
+
+        with open('templates/tasks/email-renewal-reminder-auto-subject.txt', 'r') as subject_file:
+            subject_auto = subject_file.read().strip()
+        template_auto = JINJA_ENVIRONMENT.get_template('tasks/email-renewal-reminder-auto.jinja')
+
+        for entry in expiring_entries:
+            entry_dict = entry.to_dict()
+
+            template_values['member_first_name'] = entry_dict.get(config.MEMBER_FIELDS.first_name.name)
+            body_html_noauto = template_noauto.render(template_values)
+            body_html_auto = template_auto.render(template_values)
+
+            member_name = '%s %s' % (entry_dict.get(config.MEMBER_FIELDS.first_name.name),
+                                     entry_dict.get(config.MEMBER_FIELDS.last_name.name))
+            member_email = entry_dict.get(config.MEMBER_FIELDS.email.name)
+
+            # Right now we use a Paypal button that does one-time purchases;
+            # that is, members pay for a year and then need to manually pay
+            # again the next year. But previously we used a "subscription"
+            # Paypal button, so there are still some members who automatically
+            # pay each year. These two groups will get different reminder
+            # emails.
+            auto_renewing = str(entry_dict.get(config.MEMBER_FIELDS.paypal_auto_renewing.name))
+            if auto_renewing.lower().startswith('y'):
+                # Member is auto-renewing (i.e., is a Paypal "subscriber")
+                gapps.send_email(member_email,
+                                 member_name,
+                                 subject_auto,
+                                 body_html_auto)
+            else:
+                # Member is year-to-year
+                gapps.send_email(member_email,
+                                 member_name,
+                                 subject_noauto,
+                                 body_html_noauto)
+
+
 app = webapp2.WSGIApplication([  # pylint: disable=C0103
     ('/tasks/new-member-mail', NewMemberMailWorker),
     ('/tasks/renew-member-mail', RenewMemberMailWorker),
     ('/tasks/new-volunteer-mail', NewVolunteerMailWorker),
     ('/tasks/member-sheet-cull', MemberSheetCullWorker),
     ('/tasks/member-sheet-archive', MemberSheetArchiveWorker),
+    ('/tasks/renewal-reminder-emails', RenewalReminderEmailsWorker),
 ], debug=config.DEBUG)
 
