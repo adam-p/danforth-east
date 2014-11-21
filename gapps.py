@@ -63,7 +63,7 @@ def get_google_service_clients():
 
     # Set the urlfetch timeout deadline longer. Sometimes it takes a while for
     # GData requests to complete.
-    urlfetch.set_default_fetch_deadline(60)
+    urlfetch.set_default_fetch_deadline(10)
 
     return _gdata_client, _drive_service, _http
 
