@@ -89,7 +89,7 @@ class NewMemberPage(helpers.BaseHandler):
             webapp2.abort(401, detail=detail)
 
         new_member = gapps.member_dict_from_request(self.request,
-                                                    user.email(),
+                                                    'useremail@example.com', # DEMO: user.email(),
                                                     'join')
         join_or_renew = gapps.join_or_renew_member_from_dict(new_member)
 
@@ -137,7 +137,7 @@ class RenewMemberPage(helpers.BaseHandler):
             webapp2.abort(401, detail=detail)
 
         renew_member = gapps.member_dict_from_request(self.request,
-                                                      user.email(),
+                                                      'useremail@example.com', # DEMO: user.email(),
                                                       'renew')
         gapps.renew_member_from_dict(renew_member)
 
