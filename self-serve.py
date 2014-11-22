@@ -209,6 +209,18 @@ class SelfJoinPage(helpers.BaseHandler):
             # after payment.
             paypal_url = config.PAYPAL_PAYMENT_URL % (invoice_id,)
 
+            # DEMO: We're skipping PayPal
+            params = {
+                'payer_email': new_member.get(config.MEMBER_FIELDS.email.name),
+                'payer_id': 'FAKE-ID',
+                'first_name': new_member.get(config.MEMBER_FIELDS.first_name.name),
+                'last_name': new_member.get(config.MEMBER_FIELDS.last_name.name),
+                'invoice': member_candidate_key.urlsafe(),
+            }
+            taskqueue.add(url='/self-serve/process-member-worker',
+                          params=params)
+            # /DEMO
+
             self.response.write(paypal_url)
 
 

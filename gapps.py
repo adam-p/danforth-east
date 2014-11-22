@@ -73,6 +73,9 @@ def is_user_authorized(user):
     access this service, False otherwise.
     """
 
+    # DEMO ONLY
+    return True
+
     # Check if this user (i.e., email) is already authorized
     querystring = '%s=="%s"' % (config.AUTHORIZED_FIELDS.email.name,
                                 user.email())
@@ -364,7 +367,7 @@ def authorize_new_user(request, user):
     new_user[config.AUTHORIZED_FIELDS.id.name] = str(uuid.uuid4())
     # Set the timestamps
     new_user[config.AUTHORIZED_FIELDS.created.name] = utils.current_datetime()
-    new_user[config.AUTHORIZED_FIELDS.created_by.name] = user.email()
+    new_user[config.AUTHORIZED_FIELDS.created_by.name] = 'useremail@example.com' # DEMO: user.email()
 
     _add_new_row(new_user,
                  config.AUTHORIZED_SPREADSHEET_KEY,

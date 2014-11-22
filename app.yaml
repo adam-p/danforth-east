@@ -1,5 +1,5 @@
 # CONFIG: Replace this with your own application name
-application: danfortheast
+application: mmbrmgmt
 version: 2
 runtime: python27
 api_version: 1
