@@ -15,57 +15,14 @@ import html2text
 import dateutil
 from dateutil.relativedelta import relativedelta
 
-from apiclient import errors
-from apiclient.discovery import build
-from oauth2client.client import SignedJwtAssertionCredentials
-from gdata.spreadsheets.client import SpreadsheetsClient
-from gdata.gauth import OAuth2TokenFromCredentials
-from gdata.spreadsheets.data import ListEntry
-from gdata.spreadsheets.client import ListQuery
 from google.appengine.api import mail
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 
+from googledata import GoogleData, ListEntry
 import config
 import utils
 import helpers
-
-
-_gdata_client = None
-_drive_service = None
-_http = None
-
-
-def get_google_service_clients():
-    """Returns (gdata_client, drive_service, httplib2_instance).
-    """
-
-    # Cache the services if we've already created them
-    global _gdata_client, _drive_service, _http
-    if _gdata_client and _drive_service and _http:
-        return (_gdata_client, _drive_service, _http)
-
-    keyfile = open(config.SERVICE_ACCOUNT_PEM_FILE_PATH, 'rb')
-    key = keyfile.read()
-    keyfile.close()
-
-    credentials = SignedJwtAssertionCredentials(config.SERVICE_ACCOUNT_EMAIL,
-                                                key,
-                                                scope=config.SCOPE)
-    token = OAuth2TokenFromCredentials(credentials)
-
-    _gdata_client = SpreadsheetsClient()
-    token.authorize(_gdata_client)
-
-    _http = httplib2.Http()
-    _http = credentials.authorize(_http)
-    _drive_service = build('drive', 'v2', http=_http)
-
-    # Set the urlfetch timeout deadline longer. Sometimes it takes a while for
-    # GData requests to complete.
-    urlfetch.set_default_fetch_deadline(10)
-
-    return _gdata_client, _drive_service, _http
 
 
 def is_user_authorized(user):
@@ -236,9 +193,11 @@ def join_or_renew_member_from_dict(member_dict):
                                                      config.MEMBERS_WORKSHEET_KEY)
 
     if conflict_list_entry:
+        logging.debug('found conflicting entry; updating')
         _update_record(config.MEMBER_FIELDS, conflict_list_entry, member_dict)
         return 'renew'
     else:
+        logging.debug('no conflict found; creating')
         _add_new_row(member_dict,
                      config.MEMBERS_SPREADSHEET_KEY,
                      config.MEMBERS_WORKSHEET_KEY)
@@ -315,6 +274,7 @@ def join_volunteer_from_dict(volunteer_dict):
                                                      config.VOLUNTEERS_WORKSHEET_KEY)
 
     if conflict_list_entry:
+        logging.debug('found conflicting record; updating')
         _update_record(config.VOLUNTEER_FIELDS, conflict_list_entry, volunteer_dict)
     else:
         _add_new_row(volunteer_dict,
@@ -514,71 +474,35 @@ def get_members_expiring_soon():
 def _update_list_entry(list_entry):
     """Updates the given list_entry, which must have been first retrieved with
     get_list_feed. Calls webapp2.abort on failure.
-    For some reason, this functionality isn't in the GData client, so we'll
-    need to roll it ourselves.
     """
 
-    gdata_client, _, http = get_google_service_clients()
-
-    headers = {'Content-type': 'application/atom+xml',
-               'GData-Version': gdata_client.api_version}
-
-    req_body = list_entry.to_string()\
-                         .replace('"&quot;', '\'"')\
-                         .replace('&quot;"', '"\'')
-
-    url = list_entry.get_edit_link().href
-
-    resp, _ = http.request(url, method='PUT', headers=headers, body=req_body)
-
-    if resp.status != 200:
-        webapp2.abort(500, detail='update member request failed')
+    googledata = GoogleData()
+    googledata.update_list_entry(list_entry)
 
 
 def _delete_list_entry(list_entry):
     """Updates the given list_entry, which must have been first retrieved with
     get_list_feed. Calls webapp2.abort on failure.
-    For some reason, this functionality isn't in the GData client, so we'll
-    need to roll it ourselves.
     """
 
-    gdata_client, _, http = get_google_service_clients()
-
-    headers = {'Content-type': 'application/atom+xml',
-               'GData-Version': gdata_client.api_version}
-
-    # This will cause the request to fail if the entry has been changed since
-    # it was retrieved. This is bad, since, we don't have retries, but...
-    # probably the best choice.
-    # UPDATE: This doesn't seem to do anything at all. See:
-    # http://stackoverflow.com/questions/24127369/google-spreadsheet-api-if-match-does-not-take-affect
-    # https://groups.google.com/forum/#!topic/google-spreadsheets-api/8jUpojDdr3Y
-    headers['If-Match'] = list_entry.etag
-
-    url = list_entry.get_edit_link().href
-
-    resp, _ = http.request(url, method='DELETE', headers=headers)
-
-    if resp.status != 200:
-        webapp2.abort(500, detail='delete member request failed')
+    googledata = GoogleData()
+    googledata.delete_list_entry(list_entry)
 
 
 def _get_all_rows(spreadsheet_key, worksheet_key, sort_name=None):
     """Returns a list of dicts of row data.
     """
 
-    gdata_client, _, _ = get_google_service_clients()
-
-    query = None
+    order_by = None
     if sort_name:
-        query = ListQuery(order_by=sort_name)
+        order_by = 'column:%s' % sort_name
 
+    googledata = GoogleData()
+    list_entries = googledata.get_list_entries(spreadsheet_key,
+                                               worksheet_key,
+                                               order_by=order_by)
 
-    list_feed = gdata_client.get_list_feed(spreadsheet_key,
-                                           worksheet_key,
-                                           query=query)
-
-    return [entry.to_dict() for entry in list_feed.entry]
+    return [entry.to_dict() for entry in list_entries]
 
 
 def _add_new_row(row_dict, spreadsheet_key, worksheet_key):
@@ -586,29 +510,22 @@ def _add_new_row(row_dict, spreadsheet_key, worksheet_key):
     entry = ListEntry()
     entry.from_dict(row_dict)
 
-    gdata_client, _, _ = get_google_service_clients()
-
-    gdata_client.add_list_entry(entry,
-                                spreadsheet_key,
-                                worksheet_key)
-
+    googledata = GoogleData()
+    googledata.add_list_entry(entry,  spreadsheet_key,  worksheet_key)
 
 def _get_single_list_entry(querystring, spreadsheet_key, worksheet_key):
     """Returns a matching ListEntry or None if not found.
     """
 
-    query = ListQuery(sq=querystring)
+    googledata = GoogleData()
+    list_entries = googledata.get_list_entries(spreadsheet_key,
+                                               worksheet_key,
+                                               query=querystring)
 
-    gdata_client, _, _ = get_google_service_clients()
-
-    list_feed = gdata_client.get_list_feed(spreadsheet_key,
-                                           worksheet_key,
-                                           query=query)
-
-    if len(list_feed.entry) == 0:
+    if not list_entries:
         return None
 
-    return list_feed.entry[0]
+    return list_entries[0]
 
 
 def _get_first_worksheet_id(spreadsheet_key):
@@ -616,15 +533,14 @@ def _get_first_worksheet_id(spreadsheet_key):
     in a spreadsheet (which is otherwise remarkably difficult to figure out).
     """
 
-    gdata_client, _, _ = get_google_service_clients()
+    googledata = GoogleData()
+    worksheets = googledata.get_worksheets(spreadsheet_key)
 
-    worksheets_feed = gdata_client.get_worksheets(spreadsheet_key)
-
-    if len(worksheets_feed.entry) == 0:
+    if not worksheets:
         logging.error('No worksheet found?!?')
         return None
 
-    url = worksheets_feed.entry[0].get_self_link().href
+    url = worksheets[0].get_self_link().href
 
     # There is surely a less hacky way to do this.
     worksheet_id = url.split('/')[-1]
@@ -636,7 +552,9 @@ def _copy_drive_file(file_id, new_title, description):
     """Makes a copy of the given Google Drive file (i.e., spreadsheet), with a
     new title.
     """
-    _, drive_service, _ = get_google_service_clients()
+    googledata = GoogleData()
+    drive_service = googledata.get_drive_service()
+
     drive_files = drive_service.files()              # pylint: disable=E1103
     drive_permissions = drive_service.permissions()  # pylint: disable=E1103
 
@@ -683,14 +601,13 @@ def _get_members_renewed_ago(after_datetime, before_datetime):
 
     assert(after_datetime or before_datetime)
 
-    gdata_client, _, _ = get_google_service_clients()
-
-    list_feed = gdata_client.get_list_feed(config.MEMBERS_SPREADSHEET_KEY,
-                                           config.MEMBERS_WORKSHEET_KEY)
+    googledata = GoogleData()
+    list_entries = googledata.get_list_entries(config.MEMBERS_SPREADSHEET_KEY,
+                                               config.MEMBERS_WORKSHEET_KEY)
 
     results = []
 
-    for entry in list_feed.entry:
+    for entry in list_entries:
         entry_dict = entry.to_dict()
 
         renewed_date = entry_dict.get(config.MEMBER_FIELDS.renewed.name)
@@ -729,12 +646,11 @@ def _update_all_members_address_latlong():
     """One-off helper to fill in the `address_latlong` field for legacy members.
     """
 
-    gdata_client, _, _ = get_google_service_clients()
+    googledata = GoogleData()
+    list_entries = googledata.get_list_entries(config.MEMBERS_SPREADSHEET_KEY,
+                                               config.MEMBERS_WORKSHEET_KEY)
 
-    list_feed = gdata_client.get_list_feed(config.MEMBERS_SPREADSHEET_KEY,
-                                           config.MEMBERS_WORKSHEET_KEY)
-
-    for list_entry in list_feed.entry:
+    for list_entry in list_entries:
         member_dict = list_entry.to_dict()
 
         if member_dict.get(config.MEMBER_FIELDS.address_latlong.name):
