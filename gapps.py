@@ -433,13 +433,18 @@ def archive_members_sheet(member_sheet_year):
     Returns the new current year if sheet has been archived, None otherwise.
     """
 
-    year_now = datetime.date.today().year
+    next_archive_date = datetime.date(
+                            member_sheet_year + 1,
+                            config.MEMBER_SHEET_ARCHIVE_MONTH,
+                            config.MEMBER_SHEET_ARCHIVE_DAY)
 
-    if member_sheet_year == year_now:
-        logging.info('archive_member_sheet: not archving')
+    if datetime.date.today() >= next_archive_date:
+        logging.info('archive_member_sheet: not archving; next date: %s', next_archive_date)
         return None
 
     logging.info('archive_member_sheet: archving!')
+
+    year_now = datetime.date.today().year
 
     # Make a copy of the current members sheet
     _copy_drive_file(config.MEMBERS_SPREADSHEET_KEY,

@@ -45,6 +45,17 @@ PAYPAL_IPN_VALIDATION_URL = 'https://www.paypal.com/cgi-bin/webscr?cmd=_notify-v
 
 
 #
+# Spreadsheet archive date
+#
+
+# Once a year the members spreadsheet gets copied into an "archive" document,
+# for historical reference. This is the day on which that happens.
+# Hint: Don't pick a leap year day.
+MEMBER_SHEET_ARCHIVE_MONTH = 11
+MEMBER_SHEET_ARCHIVE_DAY = 1
+
+
+#
 # Spreadsheet field info
 #
 
