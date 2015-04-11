@@ -456,8 +456,8 @@ def get_members_expiring_soon():
     # We want members whose membership will be expiring in a week. This means
     # getting members who were last renewed one year less a week ago. We
     # check daily, so we'll get members in a day-long window.
-    before_datetime = datetime.datetime.now() + relativedelta(years=-1, days=6)
-    after_datetime = datetime.datetime.now() + relativedelta(years=-1, days=7)
+    after_datetime = datetime.datetime.now() + relativedelta(years=-1, days=6)
+    before_datetime = datetime.datetime.now() + relativedelta(years=-1, days=7)
 
     expiring_entries = _get_members_renewed_ago(after_datetime, before_datetime)
 
