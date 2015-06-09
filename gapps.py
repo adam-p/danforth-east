@@ -410,7 +410,7 @@ def cull_members_sheet():
     # running at the same time. Which would be bad. But improbable. Remember
     # that in a normal run there will be at most one member to delete.
 
-    older_than = datetime.datetime.now() - relativedelta(years=2)
+    older_than = datetime.datetime.now() - relativedelta(years=2, months=1)
 
     cull_entries = _get_members_renewed_ago(None, older_than)
 
@@ -438,17 +438,19 @@ def archive_members_sheet(member_sheet_year):
                             config.MEMBER_SHEET_ARCHIVE_MONTH,
                             config.MEMBER_SHEET_ARCHIVE_DAY)
 
-    if datetime.date.today() >= next_archive_date:
+    today = datetime.date.today()
+
+    if today < next_archive_date:
         logging.info('archive_member_sheet: not archving; next date: %s', next_archive_date)
         return None
 
     logging.info('archive_member_sheet: archving!')
 
-    year_now = datetime.date.today().year
+    year_now = today.year
 
     # Make a copy of the current members sheet
     _copy_drive_file(config.MEMBERS_SPREADSHEET_KEY,
-                     'Members %d' % member_sheet_year,
+                     'Archive: Members %d' % member_sheet_year,
                      'Archive of the Members spreadsheet at the end of %d' % member_sheet_year)
 
     return year_now

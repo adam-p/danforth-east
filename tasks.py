@@ -210,7 +210,7 @@ class MemberSheetArchiveWorker(helpers.BaseHandler):
         logging.debug('MemberSheetArchiveWorker hit')
 
         settings = Settings.singleton()
-        logging.info(settings)
+        logging.debug(settings)
 
         new_year = gapps.archive_members_sheet(settings.member_sheet_year)
         if new_year:
