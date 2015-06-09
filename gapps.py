@@ -413,7 +413,7 @@ def cull_members_sheet():
     # running at the same time. Which would be bad. But improbable. Remember
     # that in a normal run there will be at most one member to delete.
 
-    older_than = datetime.datetime.now() - relativedelta(years=2)
+    older_than = datetime.datetime.now() - relativedelta(years=2, months=1)
 
     cull_entries = _get_members_renewed_ago(None, older_than)
 
@@ -436,17 +436,24 @@ def archive_members_sheet(member_sheet_year):
     Returns the new current year if sheet has been archived, None otherwise.
     """
 
-    year_now = datetime.date.today().year
+    next_archive_date = datetime.date(
+                            member_sheet_year + 1,
+                            config.MEMBER_SHEET_ARCHIVE_MONTH,
+                            config.MEMBER_SHEET_ARCHIVE_DAY)
 
-    if member_sheet_year == year_now:
-        logging.info('archive_member_sheet: not archving')
+    today = datetime.date.today()
+
+    if today < next_archive_date:
+        logging.info('archive_member_sheet: not archving; next date: %s', next_archive_date)
         return None
 
     logging.info('archive_member_sheet: archving!')
 
+    year_now = today.year
+
     # Make a copy of the current members sheet
     _copy_drive_file(config.MEMBERS_SPREADSHEET_KEY,
-                     'Members %d' % member_sheet_year,
+                     'Archive: Members %d' % member_sheet_year,
                      'Archive of the Members spreadsheet at the end of %d' % member_sheet_year)
 
     return year_now
@@ -459,8 +466,8 @@ def get_members_expiring_soon():
     # We want members whose membership will be expiring in a week. This means
     # getting members who were last renewed one year less a week ago. We
     # check daily, so we'll get members in a day-long window.
-    before_datetime = datetime.datetime.now() + relativedelta(years=-1, days=6)
-    after_datetime = datetime.datetime.now() + relativedelta(years=-1, days=7)
+    after_datetime = datetime.datetime.now() + relativedelta(years=-1, days=6)
+    before_datetime = datetime.datetime.now() + relativedelta(years=-1, days=7)
 
     expiring_entries = _get_members_renewed_ago(after_datetime, before_datetime)
 

@@ -130,7 +130,12 @@ def address_from_latlong(latlong):
         return ''
 
     geocoder = geopy.geocoders.GoogleV3(config.GOOGLE_SERVER_API_KEY)
-    res = geocoder.reverse(point)
+
+    res = None
+    try:
+        res = geocoder.reverse(point)
+    except Exception, e:
+        logging.error('Geocoder exception', exc_info=e)
 
     if not res:
         return ''

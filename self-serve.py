@@ -377,9 +377,9 @@ class ProcessMemberWorker(helpers.BaseHandler):
                 # Alert our admins about this.
                 subject = 'ALERT: failed to renew valid payer'
                 body = '''
-We received a valid PayPal transaction but were unable to match the
-transaction to a member. In other words, we got someone's money, and it looks
-legit, but we can't figure out who they are in order to actual join or renew
+We received a valid PayPal transaction but were unable to match the \
+transaction to a member. In other words, we got someone's money, and it looks \
+legit, but we can't figure out who they are in order to actually join or renew \
 them.
 
 Maybe they're in the spreadsheet under another email address?
