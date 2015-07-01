@@ -29,7 +29,7 @@ The spreadsheets acting as the "database" for this demo are:
 Introduction
 ------------
 
-The [Danforth East Community Association](http://danfortheastcommunityassociation.com/) asked me to help update their ("our", I guess) membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
+The [Danforth East Community Association](http://deca.to/) asked me to help update their ("our", I guess) membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
 
 The requirements were/are something like:
 
