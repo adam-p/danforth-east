@@ -139,11 +139,13 @@ class SelfJoinPage(helpers.BaseHandler):
         csrf_token = helpers.get_csrf_token(self.request)
 
         volunteer_interests = gapps.get_volunteer_interests()
+        skills_categories = gapps.get_skills_categories()
 
         template_values = {
             'FIELDS': config.FIELDS,
             'csrf_token': csrf_token,
             'volunteer_interests': volunteer_interests,
+            'skills_categories': skills_categories,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('self-serve-join.jinja')
@@ -447,11 +449,13 @@ class SelfVolunteerPage(helpers.BaseHandler):
         csrf_token = helpers.get_csrf_token(self.request)
 
         volunteer_interests = gapps.get_volunteer_interests()
+        skills_categories = gapps.get_skills_categories()
 
         template_values = {
             'FIELDS': config.FIELDS,
             'csrf_token': csrf_token,
             'volunteer_interests': volunteer_interests,
+            'skills_categories': skills_categories,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('self-serve-volunteer.jinja')
@@ -516,11 +520,13 @@ class SelfComboPage(helpers.BaseHandler):
         csrf_token = helpers.get_csrf_token(self.request)
 
         volunteer_interests = gapps.get_volunteer_interests()
+        skills_categories = gapps.get_skills_categories()
 
         template_values = {
             'FIELDS': config.FIELDS,
             'csrf_token': csrf_token,
             'volunteer_interests': volunteer_interests,
+            'skills_categories': skills_categories,
             'config': config,
         }
         template = JINJA_ENVIRONMENT.get_template('self-serve-combo.jinja')

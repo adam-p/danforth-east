@@ -10,7 +10,7 @@
 {% block content %}
 
 {% import 'imports/self-serve-volunteer-form.jinja' as volunteer_form %}
-{{ volunteer_form.self_serve_volunteer_form(FIELDS, csrf_token, volunteer_interests) }}
+{{ volunteer_form.self_serve_volunteer_form(FIELDS, csrf_token, volunteer_interests, skills_categories) }}
 
 {% endblock content %}
 

@@ -33,7 +33,12 @@ ListEntry = gdata.spreadsheets.data.ListEntry
 
 class GoogleData(object):
     def __init__(self):
-        urlfetch.set_default_fetch_deadline(_TIMEOUT)
+        try:
+            urlfetch.set_default_fetch_deadline(_TIMEOUT)
+        except:
+            # urlfetch.set_default_fetch_deadline may not exist
+            pass
+
         self._http = httplib2.Http(timeout=_TIMEOUT)
 
         with open(config.SERVICE_ACCOUNT_PEM_FILE_PATH, 'rb') as keyfile:

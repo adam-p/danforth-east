@@ -283,10 +283,13 @@ def join_volunteer_from_dict(volunteer_dict):
 
 
 def get_volunteer_interests():
-    rows = _get_all_rows(config.VOLUNTEER_INTERESTS_SPREADSHEET_KEY,
+    return _get_all_rows(config.VOLUNTEER_INTERESTS_SPREADSHEET_KEY,
                          config.VOLUNTEER_INTERESTS_WORKSHEET_KEY)
-    res = [row[config.VOLUNTEER_INTEREST_FIELDS.interest.name] for row in rows]
-    return set(res)
+
+
+def get_skills_categories():
+    return _get_all_rows(config.SKILLS_CATEGORIES_SPREADSHEET_KEY,
+                         config.SKILLS_CATEGORIES_WORKSHEET_KEY)
 
 
 def get_all_members():
