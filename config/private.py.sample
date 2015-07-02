@@ -74,20 +74,30 @@ PAYPAL_TXN_mc_gross_FLOAT = MEMBERSHIP_FEE_FLOAT
 
 
 #
+# MailChimp info
+#
+
+MAILCHIMP_API_KEY = 'abc123'
+
+
+#
 # Spreadsheet keys
 #
 # Note: Figuring out the key for the first worksheet is a hassle (unlike the
 # spreadsheet key it's not shown in the URL). You can our
 # gapps._get_first_worksheet_id() function to help.
 
-MEMBERS_SPREADSHEET_KEY = 'abc123'
-MEMBERS_WORKSHEET_KEY = 'od6'
-
 AUTHORIZED_SPREADSHEET_KEY = 'abc123'
 AUTHORIZED_WORKSHEET_KEY = 'od6'
 
 VOLUNTEER_INTERESTS_SPREADSHEET_KEY = 'abc123'
 VOLUNTEER_INTERESTS_WORKSHEET_KEY = 'od6'
+
+SKILLS_CATEGORIES_SPREADSHEET_KEY = 'abc123'
+SKILLS_CATEGORIES_WORKSHEET_KEY = 'od6'
+
+MEMBERS_SPREADSHEET_KEY = 'abc123'
+MEMBERS_WORKSHEET_KEY = 'od6'
 
 VOLUNTEERS_SPREADSHEET_KEY = 'abc123'
 VOLUNTEERS_WORKSHEET_KEY = 'od6'

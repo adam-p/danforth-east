@@ -145,11 +145,16 @@ In that account, go to Google Drive and create a new folder. Share that folder w
 - Your own personal email address.
 - Whomever else is going to managing members.
 
-In that folder create three spreadsheets. Open `config/__init__.py` to see what fields they should have. Create a spreadsheet called "Authorized users" (the name isn't actually important) and create columns headers with the names in `AUTHORIZED_FIELDS` (the order isn't important). Create "Members" with the column headers from `MEMBER_FIELDS`. Create "Volunteer Interest Areas" with the column headers from `VOLUNTEER_INTEREST_FIELDS`.
+In that folder you will be creating the "database" spreadsheets. Open `config/__init__.py` to see what fields they should have. Create these spreadsheets (the name isn't actually important, but it'll be easier if you follow what's here):
+- Create a spreadsheet called "Authorized users" and create columns headers with the names in `AUTHORIZED_FIELDS`. 
+- Create "Members" with the column headers from `MEMBER_FIELDS`. 
+- Create "Volunteers" with the column headers from `VOLUNTEER_FIELDS`. 
+- Create "Volunteer Interest Areas" with the column headers from `VOLUNTEER_INTEREST_FIELDS`.
+- Create "Skills Categories" with the column headers from `SKILLS_CATEGORY_FIELDS`.
 
 In the "Authorized users" sheet, add your personal email address and `test@example.com`. Also add a few entries to "Volunteer Interest Areas".
 
-For each spreadsheet, copy the big random-looking value from the URL and paste that value into `MEMBERS_SPREADSHEET_KEY`, `AUTHORIZED_SPREADSHEET_KEY`, and `VOLUNTEER_INTERESTS_SPREADSHEET_KEY`.
+For each spreadsheet, copy the big random-looking value from the URL and paste that value into the appropriate `*_SPREADSHEET_KEY`.
 
 To get the keys for the first worksheet of each of those spreadsheets, run this command:
 
@@ -157,7 +162,7 @@ To get the keys for the first worksheet of each of those spreadsheets, run this 
 python first_sheet_keys.py
 ```
 
-Put the values it prints into `MEMBERS_WORKSHEET_KEY`, `AUTHORIZED_WORKSHEET_KEY`, and `VOLUNTEER_INTERESTS_WORKSHEET_KEY`. (For brand new spreadsheets they will probably be all the same value, and the same as the values already in `private.py` and you'll think this step is silly. But if you mess around with creating and deleting sheets the values will change.)
+Put the values it prints into the appropriate `*_WORKSHEET_KEY`. (For brand new spreadsheets they will probably be all the same value, and the same as the values already in `private.py` and you'll think this step is silly. But if you mess around with creating and deleting sheets the values will change.)
 
 
 ### Try out the management site

@@ -1,6 +1,6 @@
 {% import 'imports/form-field.jinja' as form_field %}
 
-{% macro member_form_fields(create_or_renew_or_self_serve, fields, csrf_token, volunteer_interests) -%}
+{% macro member_form_fields(create_or_renew_or_self_serve, fields, csrf_token, volunteer_interests, skills_categories) -%}
 
   {% set bv_common = 'data-bv-message="This value is not valid" data-bv-notempty-message="This value is required" data-bv-emailaddress-message="This value is not a valid email address" ' %}
 
@@ -114,8 +114,8 @@
                   <input type="checkbox"
                          class="hidden"
                          name="{{ fields.member.volunteer_interests.name }}"
-                         value="{{ volunteer_interest }}">
-                  <span class="form-control">{{ volunteer_interest }}</span>
+                         value="{{ volunteer_interest[fields.volunteer_interest.interest.name] }}">
+                  <span class="form-control">{{ volunteer_interest[fields.volunteer_interest.interest.name] }}</span>
                 </div>
               </div>
               {% if loop.index is divisibleby(3) %}
@@ -138,7 +138,7 @@
 
           <div class="row">
             {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
-            {% for skill in fields.member.skills.values %}
+            {% for skills_category in skills_categories %}
               <div class="col-md-4">
                 <div class="input-group input-group-lg checkbox-group">
                   <span class="input-group-addon">
@@ -149,8 +149,8 @@
                   <input type="checkbox"
                          class="hidden"
                          name="{{ fields.member.skills.name }}"
-                         value="{{ skill }}">
-                  <span class="form-control">{{ skill }}</span>
+                         value="{{ skills_category[fields.skills_category.category.name] }}">
+                  <span class="form-control">{{ skills_category[fields.skills_category.category.name] }}</span>
                 </div>
               </div>
               {% if loop.index is divisibleby(3) %}

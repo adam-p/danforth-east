@@ -5,9 +5,10 @@
 #
 # Note: The `lib` directory is added to `sys.path` by `appengine_config.py`.
 gdata==2.0.18
-google-api-python-client==1.2
+google-api-python-client==1.4.1
 httplib2==0.9
 pytz==2014.4
 python-dateutil==2.2
 html2text==2014.7.3
 geopy==0.99
+requests==2.3.0

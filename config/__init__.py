@@ -84,12 +84,6 @@ class Field(object):
         return res
 
 
-_SKILLS_VALUES = ('Carpentry', 'Web Development', 'Event Planning',
-                  'Graphic Design/Visual Art', 'Photography',
-                  'PR/Publicity', 'Social Media', 'Writing/Editing',
-                  'Staging/Window dressing')
-
-
 # TODO: Probably better use classes than namedtuple for these sets of fields
 AUTHORIZED_FIELDS = namedtuple('AUTHORIZED_FIELDS',
                                ['id',
@@ -154,7 +148,7 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Family Member Names'),
     Field('Join Location'),
     Field('Volunteer Interests'),
-    Field('Skills', values=_SKILLS_VALUES),
+    Field('Skills'),
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
     Field('Renewed LatLong', form_field=False),
@@ -201,7 +195,7 @@ VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
     Field('Address LatLong', form_field=False),
     Field('Join Location'),
     Field('Volunteer Interests'),
-    Field('Skills', values=_SKILLS_VALUES),
+    Field('Skills'),
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
 )
@@ -210,17 +204,29 @@ VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
 VOLUNTEER_INTEREST_FIELDS = namedtuple('VOLUNTEER_INTEREST_FIELDS',
                                ['interest',
                                 'email',
-                                'name'])(
+                                'name',
+                                'mailchimp_merge_tag'])(
     Field('Interest', required=True),
     Field('Email', validator=utils.email_validator),
-    Field('Name')
+    Field('Name'),
+    Field('MailChimp Merge Tag')
+)
+
+
+SKILLS_CATEGORY_FIELDS = namedtuple('SKILLS_CATEGORY_FIELDS',
+                               ['category',
+                                'mailchimp_merge_tag'])(
+    Field('Category', required=True),
+    Field('MailChimp Merge Tag')
 )
 
 
 FIELDS = namedtuple('FIELDS', ['authorized', 'member',
-                               'volunteer_interest', 'volunteer'])(
+                               'volunteer_interest', 'volunteer',
+                               'skills_category'])(
     AUTHORIZED_FIELDS, MEMBER_FIELDS,
-    VOLUNTEER_INTEREST_FIELDS, VOLUNTEER_FIELDS
+    VOLUNTEER_INTEREST_FIELDS, VOLUNTEER_FIELDS,
+    SKILLS_CATEGORY_FIELDS
 )
 
 
