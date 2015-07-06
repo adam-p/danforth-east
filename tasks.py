@@ -277,6 +277,31 @@ class RenewalReminderEmailsWorker(helpers.BaseHandler):
                                  body_html_noauto)
 
 
+class MailChimpUpdater(helpers.BaseHandler):
+    """Updates MailChimp with changed members and volunteers.
+    """
+
+    def get(self):
+        """This will get hit by cron triggers.
+        """
+        logging.debug('MailChimpUpdater.get hit')
+
+        if not config.MAILCHIMP_ENABLED:
+            return
+
+        gapps.process_mailchimp_updates()
+
+    def post(self):
+        """This will get hit by taskqueue calls.
+        """
+        logging.debug('MailChimpUpdater.post hit')
+
+        if not config.MAILCHIMP_ENABLED:
+            return
+
+        gapps.process_mailchimp_updates()
+
+
 app = webapp2.WSGIApplication([  # pylint: disable=C0103
     ('/tasks/new-member-mail', NewMemberMailWorker),
     ('/tasks/renew-member-mail', RenewMemberMailWorker),
@@ -284,5 +309,6 @@ app = webapp2.WSGIApplication([  # pylint: disable=C0103
     ('/tasks/member-sheet-cull', MemberSheetCullWorker),
     ('/tasks/member-sheet-archive', MemberSheetArchiveWorker),
     ('/tasks/renewal-reminder-emails', RenewalReminderEmailsWorker),
+    ('/tasks/process-mailchimp-updates', MailChimpUpdater),
 ], debug=config.DEBUG)
 
