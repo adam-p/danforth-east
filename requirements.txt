@@ -11,4 +11,3 @@ pytz==2014.4
 python-dateutil==2.2
 html2text==2014.7.3
 geopy==0.99
-requests==2.3.0

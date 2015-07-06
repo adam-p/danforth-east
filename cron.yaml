@@ -21,3 +21,8 @@ cron:
   url: /tasks/renewal-reminder-emails
   schedule: every day 02:00
   timezone: America/Toronto
+
+- description: Update MailChimp with Member and Volunteer info
+  url: /tasks/process-mailchimp-updates
+  schedule: every day 03:00
+  timezone: America/Toronto

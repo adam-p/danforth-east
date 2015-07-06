@@ -66,7 +66,8 @@ class Field(object):
                  validator=utils.basic_validator,
                  form_field=True,
                  mutable=True,
-                 values=None):
+                 values=None,
+                 mailchimp_merge_tag=None):
         self.title = title
         self.name = utils.title_to_name(title)
         self.required = required
@@ -74,6 +75,7 @@ class Field(object):
         self.form_field = form_field
         self.mutable = mutable
         self.values = values
+        self.mailchimp_merge_tag = mailchimp_merge_tag
 
     def as_dict(self, json_safe):
         res = {}
@@ -128,16 +130,17 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
                             'paypal_email',
                             'paypal_payer_id',
                             'paypal_auto_renewing',
+                            'mailchimp_updated',
                             ])(
-    Field('ID', validator=lambda *args: True, form_field=True, mutable=False),
+    Field('ID', validator=lambda *args: True, form_field=True, mutable=False, mailchimp_merge_tag='MMBR_ID'),
     Field('Joined', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Joined By', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Renewed', validator=lambda *args: True, form_field=False),
     Field('Renewed By', validator=lambda *args: True, form_field=False),
     Field('Paid?'),  # This is a form field in managment interface, but not self-serve
-    Field('First Name', required=True),
-    Field('Last Name', required=True),
-    Field('Email', required=True, validator=utils.email_validator),
+    Field('First Name', required=True, mailchimp_merge_tag='FNAME'),
+    Field('Last Name', required=True, mailchimp_merge_tag='LNAME'),
+    Field('Email', required=True, validator=utils.email_validator),  # We don't use a mailchimp_merge_tag for this
     Field('Phone Number'),
     Field('Apartment Number'),
     Field('Street Number', required=True),
@@ -147,8 +150,8 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Address LatLong', form_field=False),
     Field('Family Member Names'),
     Field('Join Location'),
-    Field('Volunteer Interests'),
-    Field('Skills'),
+    Field('Volunteer Interests', mailchimp_merge_tag='VOLUNTEER'),
+    Field('Skills', mailchimp_merge_tag='SKILLS'),
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
     Field('Renewed LatLong', form_field=False),
@@ -157,6 +160,7 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Paypal Email', form_field=False),
     Field('Paypal Payer ID', form_field=False),
     Field('Paypal Auto-Renewing', form_field=False),
+    Field('MailChimp Updated', form_field=False),
 )
 
 
@@ -179,13 +183,14 @@ VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
                                'skills',
                                'joined_latlong',
                                'joined_address',
+                                'mailchimp_updated',
                                ])(
-    Field('ID', validator=lambda *args: True, form_field=True, mutable=False),
+    Field('ID', validator=lambda *args: True, form_field=True, mutable=False, mailchimp_merge_tag='MMBR_ID'),
     Field('Joined', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Joined By', validator=lambda *args: True, form_field=False, mutable=False),
-    Field('First Name', required=True),
-    Field('Last Name', required=True),
-    Field('Email', required=True, validator=utils.email_validator),
+    Field('First Name', required=True, mailchimp_merge_tag='FNAME'),
+    Field('Last Name', required=True, mailchimp_merge_tag='LNAME'),
+    Field('Email', required=True, validator=utils.email_validator),  # We don't use a mailchimp_merge_tag for this
     Field('Phone Number'),
     Field('Apartment Number'),
     Field('Street Number', required=True),
@@ -194,30 +199,27 @@ VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
     Field('Postal Code', required=True),
     Field('Address LatLong', form_field=False),
     Field('Join Location'),
-    Field('Volunteer Interests'),
-    Field('Skills'),
+    Field('Volunteer Interests', mailchimp_merge_tag='VOLUNTEER'),
+    Field('Skills', mailchimp_merge_tag='SKILLS'),
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
+    Field('MailChimp Updated', form_field=False),
 )
 
 
 VOLUNTEER_INTEREST_FIELDS = namedtuple('VOLUNTEER_INTEREST_FIELDS',
                                ['interest',
                                 'email',
-                                'name',
-                                'mailchimp_merge_tag'])(
+                                'name'])(
     Field('Interest', required=True),
     Field('Email', validator=utils.email_validator),
     Field('Name'),
-    Field('MailChimp Merge Tag')
 )
 
 
 SKILLS_CATEGORY_FIELDS = namedtuple('SKILLS_CATEGORY_FIELDS',
-                               ['category',
-                                'mailchimp_merge_tag'])(
+                               ['category'])(
     Field('Category', required=True),
-    Field('MailChimp Merge Tag')
 )
 
 

@@ -23,6 +23,7 @@ from googledata import GoogleData, ListEntry
 import config
 import utils
 import helpers
+import mailchimp
 
 
 def is_user_authorized(user):
@@ -96,6 +97,9 @@ def member_dict_from_request(request, actor, join_or_renew):
     member[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_record(
                                                             config.MEMBER_FIELDS,
                                                             member)
+
+    # We want the "MailChimp Updated" field to be cleared, regardless of mode
+    member[config.MEMBER_FIELDS.mailchimp_updated.name] = ''
 
     return member
 
@@ -248,6 +252,9 @@ def renew_member_by_email_or_paypal_id(email, paypal_payer_id, member_dict):
     # we "know" that the address isn't changing. Make sure this is better when
     # we refactor this stuff.
     #member_dict[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_record(config.MEMBER_FIELDS, member_dict)
+
+    # We're not bothering to clear the "MailChimp Updated" field here, since we
+    # know that no interesting fields are changing in the member row
 
     if list_entry:
         _update_record(config.MEMBER_FIELDS, list_entry, member_dict)
@@ -428,7 +435,7 @@ def cull_members_sheet():
         taskqueue.add(url='/tasks/member-sheet-cull')
 
         # We've done one and queued up another -- stop
-        break
+        return
 
 
 def archive_members_sheet(member_sheet_year):
@@ -472,6 +479,48 @@ def get_members_expiring_soon():
     expiring_entries = _get_members_renewed_ago(after_datetime, before_datetime)
 
     return expiring_entries or []
+
+
+def process_mailchimp_updates():
+    """Checks Members and Volunteers spreadsheets for records that need updating
+    in MailChimp.
+    """
+
+    # See comment in `cull_members_sheet()` for why we're using `taskqueue`
+    # to process these records one at a time.
+
+    googledata = GoogleData()
+
+    for fields, spreadsheet_key, worksheet_key, mailchimp_upsert in (
+            (config.MEMBER_FIELDS, config.MEMBERS_SPREADSHEET_KEY, config.MEMBERS_WORKSHEET_KEY, mailchimp.upsert_member_info),
+            (config.VOLUNTEER_FIELDS, config.VOLUNTEERS_SPREADSHEET_KEY, config.VOLUNTEERS_WORKSHEET_KEY, mailchimp.upsert_volunteer_info),
+        ):
+
+        querystring = '%s==""' % (fields.mailchimp_updated.name,)
+        list_entries = googledata.get_list_entries(spreadsheet_key,
+                                                   worksheet_key,
+                                                   query=querystring)
+
+        for entry in list_entries:
+            entry_dict = entry.to_dict()
+
+            if not entry_dict.get(fields.id.name):
+                logging.error('Member missing ID value: %s', entry_dict)
+                continue
+
+            # Updated MailChimp
+            mailchimp_upsert(entry_dict)
+
+            # Set the MailChimp update datetime
+            entry.set_value(fields.mailchimp_updated.name,
+                            utils.current_datetime())
+
+            # Update the spreadsheet
+            _update_list_entry(entry)
+
+            # We've updated one record successfully. Enqueue another run and exit.
+            taskqueue.add(url='/tasks/process-mailchimp-updates')
+            return
 
 
 #
