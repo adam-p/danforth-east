@@ -197,6 +197,28 @@ Save the button. Copy its "Email" URL and set it as `PAYPAL_PAYMENT_URL` in `pri
 As you noticed, the PayPal IPN URL is pointing to your GAE instance. So we'd better set it up.
 
 
+### MailChimp
+
+The membership system includes optional MailChimp integration, so it can be used for emailing Members and Volunteers.
+
+MailChimp integration can be disabled by setting `MAILCHIMP_ENABLED` to `False` (in `config/private.py`). Or configure MailChimp like so:
+
+1. Get your API key: Click on your name in the upper right, then "Account", then "Extras/API Keys". Click the "Create a key" button. Copy the value into `config.MAILCHIMP_API_KEY`.
+
+2. Create a new List. "List", then "Create List".
+
+3. For that list, add these merge fields/tags (these values are specified in the field info in `config/__init__.py`):
+   - Leave the default "First Name (FNAME)", "Last Name (LNAME)"
+   - Label: "Volunteer Interests". Merge tag: "VOLUNTEER". Type: text.
+   - "Skills", "SKILLS", text
+   - "Member System ID", "MMBR_ID", text
+   - "Member Type", "MMBR_TYPE", radio buttons with values "Member" and "Volunteer"
+
+4. For the list, go to "Settings/List Name and Defaults". Copy the "List ID" into `config.MAILCHIMP_MEMBERS_LIST_ID`.
+
+5. You may wish to create "Segments" for the list. For example, you could create a segment for "'Volunteer Interests' contains 'Arts Fair'", so you can easily email everyone interested in volunteering for the arts fair.
+
+
 ### Deploy to App Engine
 
 In Google App Engine Launcher click the deploy button (or use the command line stuff). You can authenticate with the credentials of the account that owns the project, or with any account added as an admin (like your personal account).
