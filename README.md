@@ -211,7 +211,6 @@ MailChimp integration can be disabled by setting `MAILCHIMP_ENABLED` to `False` 
    - Leave the default "First Name (FNAME)", "Last Name (LNAME)"
    - Label: "Volunteer Interests". Merge tag: "VOLUNTEER". Type: text.
    - "Skills", "SKILLS", text
-   - "Member System ID", "MMBR_ID", text
    - "Member Type", "MMBR_TYPE", radio buttons with values "Member" and "Volunteer"
 
 4. For the list, go to "Settings/List Name and Defaults". Copy the "List ID" into `config.MAILCHIMP_MEMBERS_LIST_ID`.
