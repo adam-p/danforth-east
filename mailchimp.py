@@ -40,8 +40,9 @@ def upsert_member_info(member_dict):
        (config.MAILCHIMP_MEMBER_TYPE_MEMBER !=
         list_member.get(_MERGE_FIELDS, {}).get(config.MAILCHIMP_MEMBER_TYPE_MERGE_TAG)):
         # The matched list item is not a Member (vs. Volunteer)
-        logging.error('upsert_member_info: wrong type: %s', member_dict)
-        webapp2.abort(500, detail='bad data in sheet')
+        logging.info('upsert_member_info: member already in MailChimp as volunteer; replacing: %s', member_dict)
+        # Member status takes precedence over Volunteer (because they paid),
+        # so we'll replace the existing entry.
 
     _upsert_member_or_volunteer_info(list_member, member_dict, config.MEMBER_FIELDS, config.MAILCHIMP_MEMBER_TYPE_MEMBER)
 
@@ -57,8 +58,11 @@ def upsert_volunteer_info(volunteer_dict):
        (config.MAILCHIMP_MEMBER_TYPE_VOLUNTEER !=
         list_member.get(_MERGE_FIELDS, {}).get(config.MAILCHIMP_MEMBER_TYPE_MERGE_TAG)):
         # The matched list item is not a Volunteer (vs. Member)
-        logging.error('upsert_volunteer_info: wrong type: %s', volunteer_dict)
-        webapp2.abort(500, detail='bad data in sheet')
+        logging.info('upsert_member_info: volunteer already in MailChimp as member; skipping: %s', volunteer_dict)
+        # Member status takes precedence over Volunteer (because they paid),
+        # so we'll won't replace the existing entry, and will proceed as if we
+        # succeeded (so the sheet gets updated).
+        return True
 
     _upsert_member_or_volunteer_info(list_member, volunteer_dict, config.VOLUNTEER_FIELDS, config.MAILCHIMP_MEMBER_TYPE_VOLUNTEER)
     return True
@@ -135,6 +139,23 @@ def _make_request(url, method, body=None):
         return json.decode(content)
 
     # If we got to here, then the request failed repeatedly.
+
+    # Hack: For certain email addresses (such as those with "spam" in the name
+    # part), MailChimp will return an error like:
+    #    `"status":400, "detail":" is already a list member. Use PATCH to update existing members."`
+    # That condition will be permanent and unrecoverable if we treat it as an
+    # error (or if we try to PATCH). So we're going to take the dirty route
+    # and just proceed as if the request succeeded. This will result in the
+    # spreadsheet getting updated for this member, allowing us to skip it in
+    # the future.
+
+    error_info = json.decode(content)
+
+    if error_info.get('status') == 400 and error_info.get('detail', '').find('is already a list member') > 0:
+        logging.warning('_make_request: got 400 "is already a member" error: %s : %s : %s', method, url, body)
+        # Pretend success
+        return
+
     webapp2.abort(int(response['status']), detail=content)
 
 
