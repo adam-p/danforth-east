@@ -22,14 +22,16 @@ The demo form-embedded-in-organization-website page is located at: https://s3.am
 The spreadsheets acting as the "database" for this demo are:
 
 * [Members](https://docs.google.com/spreadsheets/d/1CEC4cAoA4SoVZQ-trkFzy6Mi5tL42vuyWyMIts3hMQ8/edit?usp=sharing)
+* [Volunteers](https://docs.google.com/spreadsheets/d/1BZLJtMlzg1E1WGIDCEEmWFJoUTg3fdZquXaqa7-Vf4E/edit?usp=sharing)
 * [Volunteer Interest Areas](https://docs.google.com/spreadsheets/d/1NRMFHCF_9dEyizfdO2vxWXUNojLYNVc5uwFOGCHp6iA/edit?usp=sharing)
+* [Skills Categories](https://docs.google.com/spreadsheets/d/1hLNeUZA7v9K5608HF-B_jMa0VFmLo8OpHi3Js-YAeao/edit?usp=sharing)
 * [Authorized Users](https://docs.google.com/spreadsheets/d/19eGfHsDx70tHcufLNmA3lXW4KcWTMZPDIccNnLlTYfw/edit?usp=sharing) (not used in demo)
 
 
 Introduction
 ------------
 
-The [Danforth East Community Association](http://deca.to/) asked me to help update their ("our", I guess) membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
+The [Danforth East Community Association](http://deca.to/) asked me to help update their/our membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
 
 The requirements were/are something like:
 
@@ -369,11 +371,6 @@ Future work
 
 * Automatically sign people up for blog post emails.
   - (Lots of complications. Feedburner no longer has an API. Need unsubscribe. Lots of work to roll our own. MailChimp, maybe?)
-
-* Volunteer management. Probably a new page. Make it easier for a volunteer manager to see whom has indicated a willingness to volunteer for what. Filter by interest areas. Ability to mass-email those members.
-  - Does mass-mail mean we need unsubscribe? Would need another field and a GAE email receiver.
-  - "Skills" probably needs to be included in this.
-  - Implemented: People can sign up as volunteers but not members (if they live outside the catchment area, for example).
 
 * If there's a renewal of a not-yet-expired member...? Push the renewal date into the future? But that makes no sense. Maybe "renewed date" should be changed to "expiry date" (or both).
   - Right now a premature renewal doesn't give the member any extra time.
