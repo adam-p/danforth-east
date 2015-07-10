@@ -34,7 +34,7 @@ def upsert_member_info(member_dict):
     Will raise with `webapp2.abort` on error.
     """
 
-    list_member = _find_list_member(member_dict.get(config.MEMBER_FIELDS.id.name), config.MEMBER_FIELDS)
+    list_member = _find_list_member(member_dict.get(config.MEMBER_FIELDS.email.name), config.MEMBER_FIELDS)
 
     if list_member and \
        (config.MAILCHIMP_MEMBER_TYPE_MEMBER !=
@@ -51,7 +51,7 @@ def upsert_volunteer_info(volunteer_dict):
     Will raise with `webapp2.abort` on error.
     """
 
-    list_member = _find_list_member(volunteer_dict.get(config.VOLUNTEER_FIELDS.id.name), config.VOLUNTEER_FIELDS)
+    list_member = _find_list_member(volunteer_dict.get(config.VOLUNTEER_FIELDS.email.name), config.VOLUNTEER_FIELDS)
 
     if list_member and \
        (config.MAILCHIMP_MEMBER_TYPE_VOLUNTEER !=
@@ -81,15 +81,15 @@ def _upsert_member_or_volunteer_info(list_member, sheet_dict, fields, typename):
         _make_request(url, 'POST', body=json.encode(list_member))
 
 
-def _find_list_member(member_id, fields):
+def _find_list_member(member_email, fields):
     """Returns the list member dict that matches the given email address.
     Returns None if not found.
     """
     # TODO: Some day MailChimp will add support for filtering, and this can be
     # made less brute-force.
 
-    if not member_id:
-        logging.error('mailchimp._find_list_member called with empty member_id')
+    if not member_email:
+        logging.error('mailchimp._find_list_member called with empty member_email')
         webapp2.abort(500, detail='bad data in sheet')
 
     # We may need to page through results to find the member we want.
@@ -98,17 +98,16 @@ def _find_list_member(member_id, fields):
         url = 'members?count=100&offset=%d' % (offset,)
         res = _make_request(url, 'GET')
 
-        offset += len(res['members'])
+        for member in res['members']:
+            if member[_EMAIL_ADDRESS] == member_email:
+                return member
 
+        offset += len(res['members'])
         total = res['total_items']
 
         if offset >= total or not res['members']:
             # We paged all the way through
             break
-
-        for member in res['members']:
-            if member[_MERGE_FIELDS][fields.id.mailchimp_merge_tag] == member_id:
-                return member
 
     return None
 

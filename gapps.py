@@ -508,6 +508,10 @@ def process_mailchimp_updates():
                 logging.error('Member missing ID value: %s', entry_dict)
                 continue
 
+            if not entry_dict.get(fields.email.name):
+                # If there's no email, we don't add to MailChimp
+                continue
+
             # Updated MailChimp
             mailchimp_upsert(entry_dict)
 
