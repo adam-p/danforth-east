@@ -3,10 +3,11 @@ cron:
   url: /_ereporter?sender=pritchard.adam@gmail.com&to=pritchard.adam@gmail.com&versions=all
   schedule: every day 00:00
 
-- description: Cull defunct members from members sheet
-  url: /tasks/member-sheet-cull
-  schedule: every day 02:00
-  timezone: America/Toronto
+# Disabling this job for now.
+#- description: Cull defunct members from members sheet
+#  url: /tasks/member-sheet-cull
+#  schedule: every day 02:00
+#  timezone: America/Toronto
 
 - description: Archive last years sheet
   url: /tasks/member-sheet-archive
