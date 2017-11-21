@@ -106,7 +106,12 @@ def latlong_for_record(fields, record_dict):
     address_string = ', '.join(address_components)
 
     geocoder = geopy.geocoders.GoogleV3(config.GOOGLE_SERVER_API_KEY)
-    location = geocoder.geocode(address_string, region='CA')
+
+    try:
+        location = geocoder.geocode(address_string, region='CA')
+    except Exception as e:
+        logging.error('geocode failed: %s', exc_info=e)
+        return ''
 
     if not location:
         return ''
