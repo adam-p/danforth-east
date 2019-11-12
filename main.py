@@ -96,7 +96,7 @@ class NewMemberPage(helpers.BaseHandler):
         self.response.write('success: %s' % join_or_renew)
 
         # Queue the welcome email
-        taskqueue.add(url='/tasks/new-member-mail', params=new_member)
+        #taskqueue.add(url='/tasks/new-member-mail', params=new_member) # DEMO: disable emails
 
 
 class RenewMemberPage(helpers.BaseHandler):
@@ -144,7 +144,7 @@ class RenewMemberPage(helpers.BaseHandler):
         self.response.write('success')
 
         # Queue the welcome email
-        taskqueue.add(url='/tasks/renew-member-mail', params=renew_member)
+        #taskqueue.add(url='/tasks/renew-member-mail', params=renew_member) # DEMO: disable emails
 
 
 class BadUserPage(helpers.BaseHandler):

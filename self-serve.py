@@ -399,11 +399,11 @@ Current URL:
 
         # Queue the welcome email
         if join_or_renew == 'renew':
-            taskqueue.add(url='/tasks/renew-member-mail', params=member_dict)
+            #taskqueue.add(url='/tasks/renew-member-mail', params=member_dict) # DEMO: disable emails
             logging.info('renewed member')
             logging.info(member_dict)
         else:
-            taskqueue.add(url='/tasks/new-member-mail', params=member_dict)
+            #taskqueue.add(url='/tasks/new-member-mail', params=member_dict) # DEMO: disable emails
             logging.info('joined member')
             logging.info(member_dict)
 
@@ -487,7 +487,7 @@ class SelfVolunteerPage(helpers.BaseHandler):
         self.response.write('success')
 
         # Queue the welcome email
-        taskqueue.add(url='/tasks/new-volunteer-mail', params=new_volunteer)
+        #taskqueue.add(url='/tasks/new-volunteer-mail', params=new_volunteer) # DEMO: disable emails
 
 
 class SelfComboPage(helpers.BaseHandler):
