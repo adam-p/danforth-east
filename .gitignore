@@ -10,6 +10,9 @@ iframe-test-custom.html
 bower_components
 node_modules
 
+# Editor
+.vscode/
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -18,6 +21,7 @@ node_modules
 ehthumbs.db
 desktop.ini
 Thumbs.db
+.AppleDouble/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
