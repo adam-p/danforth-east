@@ -245,6 +245,12 @@ class PaypalIpnHandler(helpers.BaseHandler):
                          self.request.params.get('payment_status'))
             return  # 200
 
+        # Check if this is a membership payment. We want to ignore any other kind of payment.
+        if self.request.params.get('item_name') != config.PAYPAL_TXN_item_name:
+            logging.info('IPN with item_name: %s; %s',
+                         self.request.params.get('item_name'), self.request.params.items())
+            return  # 200
+
         # Check if the payment values are valid
         if not self._paypal_txn_values_okay():
             # Alert our admins about this

@@ -71,6 +71,8 @@ PAYPAL_TXN_receiver_email = 'youremail@gmail.com'
 PAYPAL_TXN_mc_currency_SET = ('CAD', 'USD')
 # Membership is $10/year
 PAYPAL_TXN_mc_gross_FLOAT = MEMBERSHIP_FEE_FLOAT
+# This is set in the PayPal button configuration
+PAYPAL_TXN_item_name = 'DECA Membership - 1 year'
 
 
 #
