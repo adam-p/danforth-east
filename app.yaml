@@ -1,6 +1,3 @@
-# CONFIG: Replace this with your own application name
-application: danfortheast
-version: 2
 runtime: python27
 api_version: 1
 threadsafe: true
