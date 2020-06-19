@@ -31,7 +31,7 @@ The spreadsheets acting as the "database" for this demo are:
 Introduction
 ------------
 
-The [Danforth East Community Association](http://deca.to/) asked me to help update their/our membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email. 
+The [Danforth East Community Association](http://deca.to/) asked me to help update their/our membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email.
 
 The requirements were/are something like:
 
@@ -78,7 +78,7 @@ So here is a rough flow of what happens when a member is directly registered by 
 7. Server checks to see if the new member's email address matches any already existing member. (Triggering a renewal flow if it does.)
 8. Server writes a new row to the spreadsheet with the new member information.
 
-Loading the `/new-member` page takes about 420ms. The creation of a user takes about 440ms. These aren't blazing fast numbers, but they're acceptable for this website, and that's without any caching or other optimization efforts. 
+Loading the `/new-member` page takes about 420ms. The creation of a user takes about 440ms. These aren't blazing fast numbers, but they're acceptable for this website, and that's without any caching or other optimization efforts.
 
 Retrieving a JSON'd list of all member data (for 200 members) takes about 1000ms. This isn't great, but it's done via AJAX and it's tolerable.
 
@@ -90,7 +90,7 @@ Registration of new members needed to be done on the website, but I didn't (and 
 
 This has worked pretty well, but there are some shortcomings:
 
-* The style matching between `iframe` and parent is a bit weak, but passable. It could be made better by including a CSS file provided by the webmaster/designer. 
+* The style matching between `iframe` and parent is a bit weak, but passable. It could be made better by including a CSS file provided by the webmaster/designer.
 * The modal wait dialog when sending the member information is only in the `iframe`.
 * The loading of the `iframe` isn't super fast. Sometime I'll look at optimizing general site speed and maybe add a load message/spinner in the `iframe`.
 
@@ -148,9 +148,9 @@ In that account, go to Google Drive and create a new folder. Share that folder w
 - Whomever else is going to managing members.
 
 In that folder you will be creating the "database" spreadsheets. Open `config/__init__.py` to see what fields they should have. Create these spreadsheets (the name isn't actually important, but it'll be easier if you follow what's here):
-- Create a spreadsheet called "Authorized users" and create columns headers with the names in `AUTHORIZED_FIELDS`. 
-- Create "Members" with the column headers from `MEMBER_FIELDS`. 
-- Create "Volunteers" with the column headers from `VOLUNTEER_FIELDS`. 
+- Create a spreadsheet called "Authorized users" and create columns headers with the names in `AUTHORIZED_FIELDS`.
+- Create "Members" with the column headers from `MEMBER_FIELDS`.
+- Create "Volunteers" with the column headers from `VOLUNTEER_FIELDS`.
 - Create "Volunteer Interest Areas" with the column headers from `VOLUNTEER_INTEREST_FIELDS`.
 - Create "Skills Categories" with the column headers from `SKILLS_CATEGORY_FIELDS`.
 
@@ -192,7 +192,7 @@ To try out the self-serve interface we're going to get PayPal ready.
 
 PayPal makes it pretty easy to set up a testing sandbox -- you can probably [get started here](https://developer.paypal.com/webapps/developer/applications/accounts). Also create a purchaser account or two (it doesn't matter what email you use for them, but it's handy if you use another address you own, for a more realistic workflow).
 
-Log into [www.sandbox.paypal.com](https://www.sandbox.paypal.com) with the sandbox facilitator/merchant account. Create a button for a subscription. Set the subscription period to a day, so it's easier to see the effects of automatic PayPal subscription payments. Set the price to whatever you want, but it will need to be greater than or equal to the `PAYPAL_TXN_mc_gross_FLOAT` value in `private.py`. In "Step 3" of the button interface add to the "advanced variables" field `notify_url=https://myproject.appspot.com/self-serve/paypal-ipn` (replacing `myproject` with whatever you named your project, of course).
+Log into [www.sandbox.paypal.com](https://www.sandbox.paypal.com) with the sandbox facilitator/merchant account. Create a button for a subscription. Set the subscription period to a day, so it's easier to see the effects of automatic PayPal subscription payments. Set the price to whatever you want. The value you give to the button's "item name" must be copied to `PAYPAL_TXN_item_name` in `private.py`. In "Step 3" of the button interface add to the "advanced variables" field `notify_url=https://myproject.appspot.com/self-serve/paypal-ipn` (replacing `myproject` with whatever you named your project, of course).
 
 Save the button. Copy its "Email" URL and set it as `PAYPAL_PAYMENT_URL` in `private.py`. Also set your sandbox facilitator email address to `PAYPAL_TXN_receiver_email`. (Note that `PAYPAL_IPN_VALIDATION_URL` in `config/__init__.py` is already set the sandbox.)
 
@@ -233,7 +233,7 @@ You should also "deploy" `iframe-test.html`. You can put it anywhere that's publ
 
 First, take a look at the source for `iframe-test.html`. There's an `iframe` tag and a `script` tag and that's it. It's really just giving us the cross-origin restrictions we're going to face in the actual production deployment.
 
-Go to your publicly hosted `iframe-test.html`. Fill in the form and submit it. You'll be redirected to the `PAYPAL_PAYMENT_URL`. Log in with the sandbox purchaser account your created. Pay for the subscription. 
+Go to your publicly hosted `iframe-test.html`. Fill in the form and submit it. You'll be redirected to the `PAYPAL_PAYMENT_URL`. Log in with the sandbox purchaser account your created. Pay for the subscription.
 
 Your new member won't show up in the spreadsheet immediately. The member data has been staged by the server, waiting for confirmation from PayPal that the payment went through.
 
@@ -266,11 +266,11 @@ Production steps
 
 First of all, after changing your config to production values you're going to have to be careful about further development and testing and about not deploying debug settings. You can probably use GAE's support for [multiple application versions](https://gae-php-tips.appspot.com/2013/06/25/harnessing-the-power-of-versions-on-app-engine/) to help.
 
-* PayPal stuff: 
-  - Change `config.PAYPAL_IPN_VALIDATION_URL` to the non-`sandbox` URL. 
+* PayPal stuff:
+  - Change `config.PAYPAL_IPN_VALIDATION_URL` to the non-`sandbox` URL.
   - Change `config.PAYPAL_PAYMENT_URL` to the URL of your real PayPal button. And make sure that button is configured properly (double-check the `notify_url`).
   - Change `config.PAYPAL_TXN_receiver_email` to your real PayPal account email.
-  - Double-check `config.PAYPAL_TXN_mc_currency_SET` and `config.PAYPAL_TXN_mc_gross_FLOAT`.
+  - Double-check `config.PAYPAL_TXN_item_name`.
 
 * Change `config.DEBUG` to `False`.
   - Note that this will automatically disable the `ALLOWED_EMAIL_TO_ADDRESSES` restriction.
@@ -285,7 +285,7 @@ Instructions to Organization Managers
 
 This system is designed to be easy for the organization managers to use. That being said, there are some things that need to known by them:
 
-* Do not rename columns. 
+* Do not rename columns.
   - If you need to rename a column, talk to the dev first.
   - It's fine to re-order columns or add new columns.
 
@@ -298,7 +298,7 @@ This is for the webmaster and/or the controller of the PayPal account.
 #### PayPal
 
 * If you have already been using a PayPal button for accepting subscriptions:
-  
+
   Set your account IPN to our new IPN notification URL. In the PayPal web interface go to "My Account / Profile / Selling Preferences / Instant Payment Notification Preferences" (or [this link](https://www.paypal.com/ca/cgi-bin/webscr?cmd=_profile-ipn-notify)). Click "Turn On IPN" (or maybe "Edit Settings"). Set the "Notification URL" to `https://myproject.appspot.com/self-serve/paypal-ipn` (with `myproject` replaced by our real project name). Click "Enabled" and Save.
 
   - Doing this means that any existing PayPal subscriptions will naturally become part of our new system.
@@ -322,7 +322,7 @@ Things you need to give me for initial setup:
 
 #### Site modifications
 
-The new membership form will live in an [`iframe`](https://developer.mozilla.org/en/docs/Web/HTML/Element/iframe) in the organization site. 
+The new membership form will live in an [`iframe`](https://developer.mozilla.org/en/docs/Web/HTML/Element/iframe) in the organization site.
 
 You will need to remove the existing form and replace it with these two lines of HTML:
 
@@ -333,7 +333,7 @@ You will need to remove the existing form and replace it with these two lines of
 
 ...with `myproject` replaced with the actual name or our project.
 
-If you're curious about the `script` being included: it's used to help with resizing of the form in the page (without scrollbars) and for figuring out where to position a "please wait" dialog. 
+If you're curious about the `script` being included: it's used to help with resizing of the form in the page (without scrollbars) and for figuring out where to position a "please wait" dialog.
 
 ##### Page width check
 
@@ -437,4 +437,4 @@ Future work
   - Also, generate some JS config stuff at the same time. Like, 'email' is hardcoded right now. (Look for TODOs in code.)
     - And the paths to '/new-member' and '/renew-member', etc.
 
-* If we have a compile-time or app-start-up-time step, we could add fetching of first worksheet IDs, rather than it being a manual step. 
+* If we have a compile-time or app-start-up-time step, we could add fetching of first worksheet IDs, rather than it being a manual step.

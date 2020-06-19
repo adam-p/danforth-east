@@ -67,10 +67,6 @@ PAYPAL_PAYMENT_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_s-xclic
 PAYPAL_PAYMENT_URL += '&invoice=%s'
 # When testing, this will probably be "youremail-facilitator@gmail.com"
 PAYPAL_TXN_receiver_email = 'youremail@gmail.com'
-# We'll accept Canadian or US currency -- they're pretty close.
-PAYPAL_TXN_mc_currency_SET = ('CAD', 'USD')
-# Membership is $10/year
-PAYPAL_TXN_mc_gross_FLOAT = MEMBERSHIP_FEE_FLOAT
 # This is set in the PayPal button configuration
 PAYPAL_TXN_item_name = 'DECA Membership - 1 year'
 

@@ -257,9 +257,8 @@ class PaypalIpnHandler(helpers.BaseHandler):
             subject = 'ALERT: bad values in PayPal transaction'
             body = '''
 We received a valid PayPal IPN transaction that contained incorrect or
-unexpected values. Specifically, either the recipient email address doesn't
-match ours (should be: %s), the value of the transaction was insufficient
-(should be: %s), or it was in an incorrect currency (should be: %s).
+unexpected values. Specifically, the PayPal recipient email address doesn't
+match ours; should be '%s', got '%s'.
 
 Here are the transaction values:
 %s
@@ -269,8 +268,7 @@ Current URL:
 
 [This email was sent automatically.]
 ''' % (config.PAYPAL_TXN_receiver_email,
-       config.PAYPAL_TXN_mc_gross_FLOAT,
-       config.PAYPAL_TXN_mc_currency_SET,
+       self.request.params.get('receiver_email'),
        pprint.pformat(self.request.params.items()),
        self.request.host_url)
 
@@ -291,16 +289,6 @@ Current URL:
 
     def _paypal_txn_values_okay(self):
         if self.request.params.get('receiver_email') != config.PAYPAL_TXN_receiver_email:
-            return False
-
-        if self.request.params.get('mc_currency') not in config.PAYPAL_TXN_mc_currency_SET:
-            return False
-
-        try:
-            mc_gross = float(self.request.params.get('mc_gross', '0'))
-            if mc_gross < config.PAYPAL_TXN_mc_gross_FLOAT:
-                return False
-        except ValueError:
             return False
 
         return True
