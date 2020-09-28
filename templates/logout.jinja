@@ -1,0 +1,20 @@
+{% extends "base.jinja" %}
+
+{% set page_title = 'Member Management Logout' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{# Get rid of the header on this page #}
+{% block header %}{% endblock %}
+
+{% block content %}
+
+<div class="jumbotron">
+  <h1>See you next time!</h1>
+</div>
+
+{% endblock %}
+
+{% block pagescript_file %}
+<script src="/js/login.js"></script>
+{% endblock %}

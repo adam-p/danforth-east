@@ -2,372 +2,348 @@
 
 #
 # Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# MIT License : https://adampritchard.mit-license.org/
 #
 
+from typing import Optional, List
+import os
 import logging
 import uuid
 import datetime
-
-import httplib2
-import webapp2
-import html2text
+import flask
 import dateutil
 from dateutil.relativedelta import relativedelta
+from google.cloud import tasks_v2
 
-from google.appengine.api import mail
-from google.appengine.api import taskqueue
-from google.appengine.api import urlfetch
-
-from googledata import GoogleData, ListEntry
 import config
 import utils
 import helpers
 import mailchimp
+import sheetdata
 
 
-def is_user_authorized(user):
-    """Takes an authenticated user and return True if that user is allowed to
+# This will make our life a little easier in this file.
+_S = config.SHEETS
+
+# This will be set by the JavaScript in common.js
+_GEOPOSITION_VALUE_KEY = 'geoposition'
+
+
+def is_user_authorized(email: str) -> bool:
+    """Takes an authenticated user and returns True if that user is allowed to
     access this service, False otherwise.
     """
 
+    if config.DEMO:
+        return True
+
+    if not email:
+        return False
+
     # Check if this user (i.e., email) is already authorized
-    querystring = '%s=="%s"' % (config.AUTHORIZED_FIELDS.email.name,
-                                user.email())
-    auth_user = _get_single_list_entry(querystring,
-                                       config.AUTHORIZED_SPREADSHEET_KEY,
-                                       config.AUTHORIZED_WORKSHEET_KEY)
-    if auth_user:
+    row = sheetdata.Row.find(
+        _S.authorized,
+        lambda d: d[_S.authorized.fields.email.name] == email)
+
+    if row:
         return True
 
     return False
 
 
-def member_dict_from_request(request, actor, join_or_renew):
+def member_dict_from_request(request: flask.Request, actor: str, join_or_renew: str) -> dict:
     """Creates and returns a dict of member info from the request.
     new_or_renew should be "join" if this is (or expected to be) for a new
     member, or "renew" for a member being renewed.
+    `actor` is the ID/email of the person or entity that is triggering this.
     """
 
     logging.info('member_dict_from_request')
-    logging.info(request.params.items())
+    logging.info(list(request.values.items()))
 
     # Make sure the user/form/request isn't trying to mess with fields that it
     # shouldn't be.
-    for name, field in config.MEMBER_FIELDS._asdict().items():
-        if not field.form_field and request.POST.get(name) is not None:
-            # This causes the request processing to stop
-            webapp2.abort(400, detail='invalid field')
+    for name, field in _S.member.fields._asdict().items():
+        if not field.form_field and request.values.get(name) is not None:
+            # There is a field provided in the request that isn't one that's allowed to be
+            # set via the form. This can be achieved by an attacker by modifying the page
+            # elements. This causes the request processing to stop.
+            flask.abort(400, description='invalid field')
 
-        if field.values is not None and request.POST.get(name) is not None \
-           and not set(request.POST.get(name).split(config.MULTIVALUE_DIVIDER)).issubset(field.values):
-            # This causes the request processing to stop
-            webapp2.abort(400, detail='invalid field value')
+        if field.values is not None and request.values.get(name) is not None \
+            and not set(request.values.get(name).split(config.MULTIVALUE_DIVIDER)).issubset(field.values):
+            # This field has a restricted set of allowed values, and the form has provided
+            # one that isn't allowed. This causes the request processing to stop.
+            flask.abort(400, description='invalid field value')
 
-    member = config.validate_member(request.POST)
+    member = config.validate_member(request.values)
 
     if not member:
+        logging.warning('gapps.member_dict_from_request: config.validate_member failed')
         # This causes the request processing to stop
-        webapp2.abort(400, detail='invalid input')
+        flask.abort(400, description='invalid input')
 
     # We didn't validate the geoposition above, so do it now
-    geoposition = request.POST.get('geoposition', '')  # TODO: don't hardcode field name
-    geoposition_required = config.MEMBER_FIELDS.joined_latlong.required \
+    geoposition = request.values.get(_GEOPOSITION_VALUE_KEY, '')
+    geoposition_required = _S.member.fields.joined_latlong.required \
                             if join_or_renew == 'join' else \
-                            config.MEMBER_FIELDS.renewed_latlong.required
+                            _S.member.fields.renewed_latlong.required
     if not utils.latlong_validator(geoposition, geoposition_required):
-        webapp2.abort(400, detail='invalid input')
+        logging.warning('gapps.member_dict_from_request: utils.latlong_validator failed')
+        flask.abort(400, description='invalid input')
     geoaddress = helpers.address_from_latlong(geoposition)
 
     if join_or_renew == 'join':
         # Set the GUID field
-        member[config.MEMBER_FIELDS.id.name] = str(uuid.uuid4())
+        member[_S.member.fields.id.name] = str(uuid.uuid4())
         # Set the timestamps
-        member[config.MEMBER_FIELDS.joined.name] = utils.current_datetime()
-        member[config.MEMBER_FIELDS.joined_by.name] = actor
-        member[config.MEMBER_FIELDS.joined_latlong.name] = geoposition
-        member[config.MEMBER_FIELDS.joined_address.name] = geoaddress
+        member[_S.member.fields.joined.name] = utils.current_datetime()
+        member[_S.member.fields.joined_by.name] = actor
+        member[_S.member.fields.joined_latlong.name] = geoposition
+        member[_S.member.fields.joined_address.name] = geoaddress
 
     # These get set regardless of mode
-    member[config.MEMBER_FIELDS.renewed.name] = utils.current_datetime()
-    member[config.MEMBER_FIELDS.renewed_by.name] = actor
-    member[config.MEMBER_FIELDS.renewed_latlong.name] = geoposition
-    member[config.MEMBER_FIELDS.renewed_address.name] = geoaddress
+    member[_S.member.fields.renewed.name] = utils.current_datetime()
+    member[_S.member.fields.renewed_by.name] = actor
+    member[_S.member.fields.renewed_latlong.name] = geoposition
+    member[_S.member.fields.renewed_address.name] = geoaddress
 
-    member[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_record(
-                                                            config.MEMBER_FIELDS,
+    member[_S.member.fields.address_latlong.name] = helpers.latlong_for_record(
+                                                            _S.member.fields,
                                                             member)
 
     # We want the "MailChimp Updated" field to be cleared, regardless of mode
-    member[config.MEMBER_FIELDS.mailchimp_updated.name] = ''
+    member[_S.member.fields.mailchimp_updated.name] = ''
+
+    # Fields clear if we're in demo mode. We don't want to record a demo user's email address.
+    if config.DEMO:
+        member[_S.member.fields.joined_by.name] = 'demo@example.com'
+        member[_S.member.fields.renewed_by.name] = 'demo@example.com'
+        member[_S.member.fields.joined_latlong.name] = ''
+        member[_S.member.fields.joined_address.name] = 'Demo'
+        member[_S.member.fields.renewed_latlong.name] = ''
+        member[_S.member.fields.renewed_address.name] = 'Demo'
 
     return member
 
 
-def volunteer_dict_from_request(request, actor):
+def volunteer_dict_from_request(request: flask.Request, actor: str) -> dict:
     """Creates and returns a dict of volunteer info from the request.
+    `actor` is the ID/email of the person or entity that is triggering this.
     """
 
-    logging.debug('volunteer_dict_from_request')
-    logging.debug(request.params.items())
+    logging.debug('gapps.volunteer_dict_from_request: %s', list(request.values.items()))
 
     # Make sure the user/form/request isn't trying to mess with fields that it
     # shouldn't be.
-    for name, field in config.VOLUNTEER_FIELDS._asdict().items():
-        if not field.form_field and request.POST.get(name) is not None:
+    for name, field in _S.volunteer.fields._asdict().items():
+        if not field.form_field and request.values.get(name) is not None:
             # This causes the request processing to stop
-            webapp2.abort(400, detail='invalid field')
+            flask.abort(400, description='invalid field')
 
-        if field.values is not None and request.POST.get(name) is not None \
-           and not set(request.POST.get(name).split(config.MULTIVALUE_DIVIDER)).issubset(field.values):
+        if field.values is not None and request.values.get(name) is not None \
+           and not set(request.values.get(name).split(config.MULTIVALUE_DIVIDER)).issubset(field.values):
             # This causes the request processing to stop
-            webapp2.abort(400, detail='invalid field value')
+            flask.abort(400, description='invalid field value')
 
-    volunteer = config.validate_volunteer(request.POST)
+    volunteer = config.validate_volunteer(request.values)
 
     if not volunteer:
+        logging.warning('gapps.volunteer_dict_from_request: config.validate_volunteer failed')
         # This causes the request processing to stop
-        webapp2.abort(400, detail='invalid input')
+        flask.abort(400, description='invalid input')
 
     # We didn't validate the geoposition above, so do it now
-    geoposition = request.POST.get('geoposition', '')  # TODO: don't hardcode field name
-    geoposition_required = config.VOLUNTEER_FIELDS.joined_latlong.required
+    geoposition = request.values.get(_GEOPOSITION_VALUE_KEY, '')
+    geoposition_required = _S.volunteer.fields.joined_latlong.required
     if not utils.latlong_validator(geoposition, geoposition_required):
-        webapp2.abort(400, detail='invalid input')
+        logging.warning('gapps.volunteer_dict_from_request: utils.latlong_validator failed')
+        flask.abort(400, description='invalid input')
     geoaddress = helpers.address_from_latlong(geoposition)
 
     # Set the GUID field
-    volunteer[config.VOLUNTEER_FIELDS.id.name] = str(uuid.uuid4())
+    volunteer[_S.volunteer.fields.id.name] = str(uuid.uuid4())
     # Set the timestamps
-    volunteer[config.VOLUNTEER_FIELDS.joined.name] = utils.current_datetime()
-    volunteer[config.VOLUNTEER_FIELDS.joined_by.name] = actor
-    volunteer[config.VOLUNTEER_FIELDS.joined_latlong.name] = geoposition
-    volunteer[config.VOLUNTEER_FIELDS.joined_address.name] = geoaddress
+    volunteer[_S.volunteer.fields.joined.name] = utils.current_datetime()
+    volunteer[_S.volunteer.fields.joined_by.name] = actor
+    volunteer[_S.volunteer.fields.joined_latlong.name] = geoposition
+    volunteer[_S.volunteer.fields.joined_address.name] = geoaddress
 
-    volunteer[config.VOLUNTEER_FIELDS.address_latlong.name] = \
-        helpers.latlong_for_record(config.VOLUNTEER_FIELDS, volunteer)
+    volunteer[_S.volunteer.fields.address_latlong.name] = \
+        helpers.latlong_for_record(_S.volunteer.fields, volunteer)
 
     return volunteer
 
 
-def _update_record(fields, list_entry, update_dict):
-    """Updates the spreadsheet entry for `list_entry` with the data in
-    `update_dict`. Also modifies/fills in `update_dict` with data from
-    `list_entry`.
-    `update_dict` will be modified with actual data.
-    """
-
-    # Update the values in list_entry
-    for name, value in list_entry.to_dict().items():
-        field = next((f for f in fields if f.name == name), None)
-        if not field:
-            # Field in list entry is not found in config fields. This can
-            # happen if we have added a column to the spreadsheet that isn't
-            # yet in the deployed config.
-            logging.warning('field in spreadsheet not found in config')
-            continue
-
-        if field.mutable and update_dict.get(name) is not None:
-            list_entry.set_value(name, update_dict.get(name))
-        else:
-            update_dict[name] = value
-
-    _update_list_entry(list_entry)
-
-    return update_dict
-
-
-def join_or_renew_member_from_dict(member_dict):
+def join_or_renew_member_from_dict(member_dict: dict) -> str:
     """Renews the member if the email address already exists, otherwise joins
     the member as brand new. Returns 'renew' in the former case, 'join' in the
     latter.
     `member_dict` will be modified with actual data.
     """
 
-    conflict_list_entry = None
-    if member_dict.get(config.MEMBER_FIELDS.email.name):
+    conflict_row = None
+    if member_dict.get(_S.member.fields.email.name):
         # Check if this member email already exists
-        querystring = '%s=="%s"' % (config.MEMBER_FIELDS.email.name,
-                                    member_dict.get(config.MEMBER_FIELDS.email.name))
-        conflict_list_entry = _get_single_list_entry(querystring,
-                                                     config.MEMBERS_SPREADSHEET_KEY,
-                                                     config.MEMBERS_WORKSHEET_KEY)
+        conflict_row = sheetdata.Row.find(
+            _S.member,
+            lambda d: d[_S.member.fields.email.name] == member_dict.get(_S.member.fields.email.name))
 
-    if conflict_list_entry:
+    if conflict_row:
         logging.debug('found conflicting entry; updating')
-        _update_record(config.MEMBER_FIELDS, conflict_list_entry, member_dict)
+
+        # Clear the fields that should not be set when renewing.
+        # TODO: This is a hack. It would be better to not fill in the fields in the first
+        # place. Instead we need to make sure the fields set in member_dict_from_request()
+        # are the same ones we clear here. We should find a better way.
+        member_dict[_S.member.fields.id.name] = None
+        member_dict[_S.member.fields.joined.name] = None
+        member_dict[_S.member.fields.joined_by.name] = None
+        member_dict[_S.member.fields.joined_latlong.name] = None
+        member_dict[_S.member.fields.joined_address.name] = None
+
+        conflict_row.dict.update(member_dict)
+        conflict_row.update()
         return 'renew'
     else:
         logging.debug('no conflict found; creating')
-        _add_new_row(member_dict,
-                     config.MEMBERS_SPREADSHEET_KEY,
-                     config.MEMBERS_WORKSHEET_KEY)
+        sheetdata.Row(member_dict, sheet=_S.member).append()
         return 'join'
 
 
-def renew_member_from_dict(member_dict):
+def renew_member_from_dict(member_dict: dict):
     """Renew the membership of an existing member, while updating any info
     about them.
     `member_dict` will be modified with actual data.
     """
 
     # Retrieve the record from the spreadsheet
-    # NOTE: We're not putting quotes around the second %s because if we do,
-    # and the ID is numeric, the match will fail. Dumb.
-    querystring = '%s==%s' % (config.MEMBER_FIELDS.id.name,
-                              member_dict[config.MEMBER_FIELDS.id.name])
-    list_entry = _get_single_list_entry(querystring,
-                                        config.MEMBERS_SPREADSHEET_KEY,
-                                        config.MEMBERS_WORKSHEET_KEY)
+    row = sheetdata.Row.find(_S.member,
+        lambda d: d[_S.member.id_field().name] == member_dict[_S.member.id_field().name])
 
-    if not list_entry:
-        webapp2.abort(400, detail='user ID lookup failed')
+    if not row:
+        flask.abort(400, description='user lookup failed')
 
-    _update_record(config.MEMBER_FIELDS, list_entry, member_dict)
+    row.dict.update(member_dict)
+    row.update()
 
 
-def renew_member_by_email_or_paypal_id(email, paypal_payer_id, member_dict):
+def renew_member_by_email_or_paypal_id(email: str, paypal_payer_id: str, member_dict: dict) -> bool:
     """Looks in any email fields for the given email address and in the payer
     ID field for `paypal_payer_id`. Updates member entry from `member_dict`.
     Returns True if the member was found and renewed.
     """
-    querystring = '%s=="%s" or %s=="%s" or %s=="%s"' % (
-                    config.MEMBER_FIELDS.paypal_payer_id.name,
-                    paypal_payer_id,
-                    config.MEMBER_FIELDS.email.name,
-                    email,
-                    config.MEMBER_FIELDS.paypal_email.name,
-                    email)
-    list_entry = _get_single_list_entry(querystring,
-                                        config.MEMBERS_SPREADSHEET_KEY,
-                                        config.MEMBERS_WORKSHEET_KEY)
+    row = sheetdata.Row.find(_S.member,
+        lambda d: d[_S.member.fields.paypal_payer_id.name] == paypal_payer_id or d[_S.member.fields.email.name] == email or d[_S.member.fields.paypal_email.name] == email)
 
-    # TODO: Refactor this duplication
-    member_dict[config.MEMBER_FIELDS.renewed.name] = utils.current_datetime()
-    member_dict[config.MEMBER_FIELDS.renewed_by.name] = config.PAYPAL_ACTOR_NAME
-    member_dict[config.MEMBER_FIELDS.renewed_latlong.name] = ''
-    member_dict[config.MEMBER_FIELDS.renewed_address.name] = ''
+    if not row:
+        return False
+
+    member_dict[_S.member.fields.renewed.name] = utils.current_datetime()
+    member_dict[_S.member.fields.renewed_by.name] = config.PAYPAL_ACTOR_NAME
+    member_dict[_S.member.fields.renewed_latlong.name] = ''
+    member_dict[_S.member.fields.renewed_address.name] = ''
 
     # HACK: In theory we should be updating the address geoposition here. But
     # we "know" that the address isn't changing. Make sure this is better when
     # we refactor this stuff.
-    #member_dict[config.MEMBER_FIELDS.address_latlong.name] = helpers.latlong_for_record(config.MEMBER_FIELDS, member_dict)
+    #member_dict[_S.member.fields.address_latlong.name] = helpers.latlong_for_record(_S.member.fields, member_dict)
 
     # We're not bothering to clear the "MailChimp Updated" field here, since we
     # know that no interesting fields are changing in the member row
 
-    if list_entry:
-        _update_record(config.MEMBER_FIELDS, list_entry, member_dict)
-        return True
-
-    return False
+    row.dict.update(member_dict)
+    row.update()
+    return True
 
 
-def join_volunteer_from_dict(volunteer_dict):
+def join_volunteer_from_dict(volunteer_dict: dict):
     """Add the new volunteer.
     `volunteer_dict` will be modified with actual data.
     """
 
-    conflict_list_entry = None
-    if volunteer_dict.get(config.VOLUNTEER_FIELDS.email.name):
+    conflict_row = None
+    if volunteer_dict.get(_S.volunteer.fields.email.name):
         # Check if this volunteer email already exists
-        querystring = '%s=="%s"' % (config.VOLUNTEER_FIELDS.email.name,
-                                    volunteer_dict.get(config.VOLUNTEER_FIELDS.email.name))
-        conflict_list_entry = _get_single_list_entry(querystring,
-                                                     config.VOLUNTEERS_SPREADSHEET_KEY,
-                                                     config.VOLUNTEERS_WORKSHEET_KEY)
+        conflict_row = sheetdata.Row.find(
+            _S.volunteer,
+            lambda d: d[_S.volunteer.fields.email.name] == volunteer_dict.get(_S.volunteer.fields.email.name))
 
-    if conflict_list_entry:
+    if conflict_row:
         logging.debug('found conflicting record; updating')
-        _update_record(config.VOLUNTEER_FIELDS, conflict_list_entry, volunteer_dict)
+
+        # Clear the fields that should not be set when updating.
+        # See comment in join_or_renew_member_from_dict for why this is a hack.
+        volunteer_dict[_S.volunteer.fields.id.name] = None
+        volunteer_dict[_S.volunteer.fields.joined.name] = None
+        volunteer_dict[_S.volunteer.fields.joined_by.name] = None
+        volunteer_dict[_S.volunteer.fields.joined_latlong.name] = None
+        volunteer_dict[_S.volunteer.fields.joined_address.name] = None
+
+        conflict_row.dict.update(volunteer_dict)
+        conflict_row.update()
     else:
-        _add_new_row(volunteer_dict,
-                     config.VOLUNTEERS_SPREADSHEET_KEY,
-                     config.VOLUNTEERS_WORKSHEET_KEY)
+        logging.debug('no conflict found; creating')
+        sheetdata.Row(volunteer_dict, sheet=_S.volunteer).append()
 
 
-def get_volunteer_interests():
-    return _get_all_rows(config.VOLUNTEER_INTERESTS_SPREADSHEET_KEY,
-                         config.VOLUNTEER_INTERESTS_WORKSHEET_KEY)
+def get_volunteer_interests() -> List[str]:
+    """Get a list of all volunteer interests from the sheet.
+    """
+    rows = sheetdata.find_rows(_S.volunteer_interest, matcher=None)
+    return [r.dict for r in rows]
 
 
-def get_skills_categories():
-    return _get_all_rows(config.SKILLS_CATEGORIES_SPREADSHEET_KEY,
-                         config.SKILLS_CATEGORIES_WORKSHEET_KEY)
+def get_skills_categories() -> List[str]:
+    """Get a list of all skills categories from the sheet.
+    """
+    rows = sheetdata.find_rows(_S.skills_category, matcher=None)
+    return [r.dict for r in rows]
 
 
-def get_all_members():
+def get_all_members() -> List[dict]:
     """Returns a list of dicts of member data.
     """
-    return _get_all_rows(config.MEMBERS_SPREADSHEET_KEY,
-                         config.MEMBERS_WORKSHEET_KEY,
-                         sort_name=config.MEMBER_FIELDS.last_name.name)
+    rows = sheetdata.find_rows(_S.member, matcher=None)
+    # Putting "||" between the first and last name to get a proper sort is not great, but sufficient
+    rows.sort(key=lambda r: str.lower(f'{r.dict[_S.member.fields.last_name.name]}||{r.dict[_S.member.fields.first_name.name]}'))
+    return [r.dict for r in rows]
 
 
-def authorize_new_user(request, user):
-    """Creates a new member with the data in the reqeust.
+def authorize_new_user(request: flask.Request, current_user_email: str):
+    """Creates a new member with the data in the request.
+    Calls flask.abort on bad input.
     """
 
-    logging.info('authorize_user')
-    logging.info(request.params.items())
+    logging.info('authorize_new_user')
+    logging.info(list(request.values.items()))
 
-    new_user = config.validate_obj_against_fields(request.POST,
-                                                  config.AUTHORIZED_FIELDS)
+    new_user = config.validate_obj_against_fields(request.values, _S.authorized.fields)
 
     if not new_user:
+        logging.warning('gapps.authorize_new_user: config.validate_obj_against_fields failed')
         # This causes the request processing to stop
-        webapp2.abort(400, detail='invalid input')
+        flask.abort(400, description='invalid input')
 
     # Check if this user (i.e., email) is already authorized
-    # NOTE: We're putting "" around the second %s because otherwise the query
-    # gives an error.
-    querystring = '%s=="%s"' % (config.AUTHORIZED_FIELDS.email.name,
-                                request.POST.get(config.AUTHORIZED_FIELDS.email.name))
-    existing_user = _get_single_list_entry(querystring,
-                                           config.AUTHORIZED_SPREADSHEET_KEY,
-                                           config.AUTHORIZED_WORKSHEET_KEY)
-    if existing_user:
+    if is_user_authorized(request.values.get(_S.authorized.fields.email.name)):
         # This causes the request processing to stop
-        webapp2.abort(400, detail='user email address already authorized')
+        flask.abort(400, description='user email address already authorized')
 
     # Set the GUID field
-    new_user[config.AUTHORIZED_FIELDS.id.name] = str(uuid.uuid4())
+    new_user[_S.authorized.fields.id.name] = str(uuid.uuid4())
     # Set the timestamps
-    new_user[config.AUTHORIZED_FIELDS.created.name] = utils.current_datetime()
-    new_user[config.AUTHORIZED_FIELDS.created_by.name] = user.email()
+    new_user[_S.authorized.fields.created.name] = utils.current_datetime()
+    new_user[_S.authorized.fields.created_by.name] = current_user_email
 
-    _add_new_row(new_user,
-                 config.AUTHORIZED_SPREADSHEET_KEY,
-                 config.AUTHORIZED_WORKSHEET_KEY)
+    # Don't record a demo user's email address
+    if config.DEMO:
+        new_user[_S.authorized.fields.created_by.name] = 'user@example.com'
 
-
-def send_email(to_address, to_name, subject, body_html):
-    """Sends an email from the configured address.
-    Does not check for address validity.
-    """
-
-    if config.ALLOWED_EMAIL_TO_ADDRESSES is not None and \
-       to_address not in config.ALLOWED_EMAIL_TO_ADDRESSES:
-        # Not allowed to send to this address
-        logging.info('send_email: not allowed to send to: %s' % to_address)
-        return
-
-    full_to_address = '%s <%s>' % (to_name, to_address)
-
-    h2t = html2text.HTML2Text()
-    h2t.body_width = 0
-    body_text = h2t.handle(body_html)
-
-    message = mail.EmailMessage(sender=config.MASTER_EMAIL_SEND_ADDRESS,
-                                subject=subject,
-                                to=full_to_address,
-                                body=body_text,
-                                html=body_html)
-
-    message.send()
+    sheetdata.Row(dct=new_user, sheet=_S.authorized).append()
 
 
-def get_volunteer_interest_reps_for_member(member_data):
+def get_volunteer_interest_reps_for_member(member_data: dict) -> dict:
     """Gets the reps for the volunteer interest areas that the user has
     indicated. Returns a dict that looks like this:
         {
@@ -382,16 +358,13 @@ def get_volunteer_interest_reps_for_member(member_data):
     Returns {} if no reps found.
     """
 
-    all_reps = _get_all_rows(config.VOLUNTEER_INTERESTS_SPREADSHEET_KEY,
-                             config.VOLUNTEER_INTERESTS_WORKSHEET_KEY)
+    all_reps = get_volunteer_interests()
 
-    member_interests = member_data.get(config.MEMBER_FIELDS.volunteer_interests.name, '')\
-                                  .split(config.MULTIVALUE_DIVIDER)
+    member_interests = member_data.get(_S.member.fields.volunteer_interests.name, '').split(config.MULTIVALUE_DIVIDER)
 
     interest_reps = {}
-
     for member_interest in member_interests:
-        reps = [rep for rep in all_reps if rep.get('interest') == member_interest and rep.get('email')]
+        reps = [rep for rep in all_reps if rep.get(_S.volunteer_interest.fields.interest.name) == member_interest and rep.get(_S.volunteer_interest.fields.email.name)]
         if reps:
             interest_reps[member_interest] = reps
 
@@ -402,43 +375,19 @@ def cull_members_sheet():
     """Deletes defunct members from the members sheet.
     """
 
-    # NOTE: The Google Spreadsheet API for deleting a row is stupid,
-    # inconsistent, and dangerous. It's incredibly easy to accidentally
-    # delete rows that you didn't intend to delete.
-    # For example, see the comment about `If-Match` in _delete_list_entry().
-    # So we're going to do this in the safest, dumbest way possible: We're
-    # going to retrieve the entire spreadsheet, find a single row to delete,
-    # delete it, and then re-fetch the entire spreadsheet again, etc.
-    # We're going to make this even dumber by sending a taskqueue request to
-    # ourself instead of actually looping. We're doing it that because I'm
-    # afraid that this approach is so slow and dumb that it will exceed the
-    # task time limit. (Although it probably won't.) And because maybe it's
-    # more robust that way.
-    #
-    # The fact that this task can be triggered by cron *and* by taskqueue
-    # probably means that there's a possibility of multiple threads of them
-    # running at the same time. Which would be bad. But improbable. Remember
-    # that in a normal run there will be at most one member to delete.
-
     older_than = datetime.datetime.now() - relativedelta(years=2, months=1)
 
-    cull_entries = _get_members_renewed_ago(None, older_than)
+    cull_rows = _get_members_renewed_ago(None, older_than)
 
-    if not cull_entries:
+    if not cull_rows:
         return
 
-    for entry in cull_entries:
-        logging.info('cull_members_sheet: deleting: %s' % entry.to_dict())
-        _delete_list_entry(entry)
+    logging.info('cull_members_sheet: deleting: %s', [r.dict for r in cull_rows])
 
-        # Queue up another call
-        taskqueue.add(url='/tasks/member-sheet-cull')
-
-        # We've done one and queued up another -- stop
-        return
+    sheetdata.delete_rows(_S.member, [r.num for r in cull_rows])
 
 
-def archive_members_sheet(member_sheet_year):
+def archive_members_sheet(member_sheet_year: int) -> Optional[int]:
     """Makes an archival copy of the members sheet.
     Returns the new current year if sheet has been archived, None otherwise.
     """
@@ -459,15 +408,16 @@ def archive_members_sheet(member_sheet_year):
     year_now = today.year
 
     # Make a copy of the current members sheet
-    _copy_drive_file(config.MEMBERS_SPREADSHEET_KEY,
-                     'Archive: Members %d' % member_sheet_year,
-                     'Archive of the Members spreadsheet at the end of %d' % member_sheet_year)
+    sheetdata.copy_drive_file(
+        _S.member.spreadsheet_id,
+        'Archive: Members %d' % member_sheet_year,
+        'Archive of the Members spreadsheet at the end of %d' % member_sheet_year)
 
     return year_now
 
 
-def get_members_expiring_soon():
-    """Returns a list of list-entries of members expiring soon.
+def get_members_expiring_soon() -> List[sheetdata.Row]:
+    """Returns a list of rows of members expiring soon.
     """
 
     # We want members whose membership will be expiring in a week. This means
@@ -476,9 +426,9 @@ def get_members_expiring_soon():
     after_datetime = datetime.datetime.now() + relativedelta(years=-1, days=6)
     before_datetime = datetime.datetime.now() + relativedelta(years=-1, days=7)
 
-    expiring_entries = _get_members_renewed_ago(after_datetime, before_datetime)
+    expiring_rows = _get_members_renewed_ago(after_datetime, before_datetime)
 
-    return expiring_entries or []
+    return expiring_rows or []
 
 
 def process_mailchimp_updates():
@@ -486,164 +436,100 @@ def process_mailchimp_updates():
     in MailChimp.
     """
 
-    # See comment in `cull_members_sheet()` for why we're using `taskqueue`
-    # to process these records one at a time.
-
-    googledata = GoogleData()
-
-    for fields, spreadsheet_key, worksheet_key, mailchimp_upsert in (
-            (config.MEMBER_FIELDS, config.MEMBERS_SPREADSHEET_KEY, config.MEMBERS_WORKSHEET_KEY, mailchimp.upsert_member_info),
-            (config.VOLUNTEER_FIELDS, config.VOLUNTEERS_SPREADSHEET_KEY, config.VOLUNTEERS_WORKSHEET_KEY, mailchimp.upsert_volunteer_info),
+    for sheet, mailchimp_upsert in (
+            (_S.member, mailchimp.upsert_member_info),
+            (_S.volunteer, mailchimp.upsert_volunteer_info),
         ):
 
-        querystring = '%s==""' % (fields.mailchimp_updated.name,)
-        list_entries = googledata.get_list_entries(spreadsheet_key,
-                                                   worksheet_key,
-                                                   query=querystring)
+        rows = sheetdata.find_rows(
+            sheet,
+            lambda d: not d[sheet.fields.mailchimp_updated.name])
 
-        for entry in list_entries:
-            entry_dict = entry.to_dict()
+        rows_to_update = []
 
-            if not entry_dict.get(fields.id.name):
-                logging.error('Member missing ID value: %s', entry_dict)
+        for row in rows:
+            if not row.dict.get(sheet.fields.id.name):
+                logging.error('Member or Volunteer missing ID value: %s', row.dict)
                 continue
 
-            if not entry_dict.get(fields.email.name):
+            if not row.dict.get(sheet.fields.email.name):
                 # If there's no email, we don't add to MailChimp
                 continue
 
-            # Updated MailChimp
-            mailchimp_upsert(entry_dict)
-
             # Set the MailChimp update datetime
-            entry.set_value(fields.mailchimp_updated.name,
-                            utils.current_datetime())
+            row.dict[sheet.fields.mailchimp_updated.name] = utils.current_datetime()
 
-            # Update the spreadsheet
-            _update_list_entry(entry)
+            # Update MailChimp. Note that this involves a network call.
+            # TODO: Is there a bulk upsert for Mailchimp?
+            mailchimp_upsert(row.dict)
 
-            # We've updated one record successfully. Enqueue another run and exit.
-            taskqueue.add(url='/tasks/process-mailchimp-updates')
-            return
+            rows_to_update.append(row)
+
+        sheetdata.update_rows(sheet, rows_to_update)
+
+
+_TASK_QUEUE_SECRET_PARAM = 'secret'
+
+def enqueue_task(url: str, params: dict):
+    """Enqueue an App Engine task.
+    `url` is relative. It must have no query params. The request will use the POST method.
+    `params` must be something that can be JSON-encoded.
+    """
+    client = tasks_v2.CloudTasksClient()
+    parent = client.queue_path(config.PROJECT_NAME, config.PROJECT_REGION, config.TASK_QUEUE_NAME)
+
+    task = {
+        'app_engine_http_request': {
+            'http_method': tasks_v2.HttpMethod.POST
+        }
+    }
+    task['app_engine_http_request']['relative_uri'] = f'{url}?{_TASK_QUEUE_SECRET_PARAM}={config.FLASK_SECRET_KEY}'
+    task['app_engine_http_request']['body'] = flask.json.dumps(params).encode()
+
+    response = client.create_task(parent=parent, task=task)
+    logging.info(f'enqueued task to {url}')
+    logging.info(response.name)
+
+def validate_queue_task(request: flask.Request) -> dict:
+    """Check that the incoming request is a legitimate queue task.
+    Calls flask.abort(401) if it's not valid.
+    The documentation assures us that this should just be a matter of checking for the
+    presence of one of a number of headers (https://cloud.google.com/tasks/docs/creating-appengine-handlers#reading_app_engine_task_request_headers),
+    but to be extra safe we're going to pass and check a secret.
+    (The concern is that an attacker will make requests to our queue tasks directly.)
+    """
+    logging.info(f'gapps.validate_queue_task: validating request to {request.base_url}')
+    if not request.headers.get('X-AppEngine-QueueName'):
+        logging.error('gapps.validate_queue_task: queue task request missing X-AppEngine-QueueName')
+        flask.abort(401)
+    if request.args.get(_TASK_QUEUE_SECRET_PARAM) != config.FLASK_SECRET_KEY:
+        logging.error('gapps.validate_queue_task: queue task request missing correct secret')
+        flask.abort(401)
+
+    logging.info(f'gapps.validate_queue_task: request is valid to {request.base_url}')
+    params = flask.json.loads(request.get_data(as_text=True))
+    return params
+
+def validate_cron_task(request: flask.Request):
+    """Check that the incoming request is a legitimate cron task.
+    Calls flask.abort(401) if it's not valid.
+    Unlike in the queue task validation, there's no additional secret we can pass to
+    double-check. This _should_ be fine.
+    https://cloud.google.com/appengine/docs/flexible/python/scheduling-jobs-with-cron-yaml#validating_cron_requests
+    """
+    logging.info(f'validating cron task request to {request.base_url}')
+    if not request.headers.get('X-Appengine-Cron') == 'true':
+        logging.error('queue task request missing X-Appengine-Cron')
+        flask.abort(401)
 
 
 #
 # Low-ish-level helpers
 #
 
-def _update_list_entry(list_entry):
-    """Updates the given list_entry, which must have been first retrieved with
-    get_list_feed. Calls webapp2.abort on failure.
-    """
-
-    googledata = GoogleData()
-    googledata.update_list_entry(list_entry)
-
-
-def _delete_list_entry(list_entry):
-    """Updates the given list_entry, which must have been first retrieved with
-    get_list_feed. Calls webapp2.abort on failure.
-    """
-
-    googledata = GoogleData()
-    googledata.delete_list_entry(list_entry)
-
-
-def _get_all_rows(spreadsheet_key, worksheet_key, sort_name=None):
-    """Returns a list of dicts of row data.
-    """
-
-    order_by = None
-    if sort_name:
-        order_by = 'column:%s' % sort_name
-
-    googledata = GoogleData()
-    list_entries = googledata.get_list_entries(spreadsheet_key,
-                                               worksheet_key,
-                                               order_by=order_by)
-
-    return [entry.to_dict() for entry in list_entries]
-
-
-def _add_new_row(row_dict, spreadsheet_key, worksheet_key):
-
-    entry = ListEntry()
-    entry.from_dict(row_dict)
-
-    googledata = GoogleData()
-    googledata.add_list_entry(entry,  spreadsheet_key,  worksheet_key)
-
-def _get_single_list_entry(querystring, spreadsheet_key, worksheet_key):
-    """Returns a matching ListEntry or None if not found.
-    """
-
-    googledata = GoogleData()
-    list_entries = googledata.get_list_entries(spreadsheet_key,
-                                               worksheet_key,
-                                               query=querystring)
-
-    if not list_entries:
-        return None
-
-    return list_entries[0]
-
-
-def _get_first_worksheet_id(spreadsheet_key):
-    """Mostly used as a hand-run function to get the ID of the first worksheet
-    in a spreadsheet (which is otherwise remarkably difficult to figure out).
-    """
-
-    googledata = GoogleData()
-    worksheets = googledata.get_worksheets(spreadsheet_key)
-
-    if not worksheets:
-        logging.error('No worksheet found?!?')
-        return None
-
-    url = worksheets[0].get_self_link().href
-
-    # There is surely a less hacky way to do this.
-    worksheet_id = url.split('/')[-1]
-
-    return worksheet_id
-
-
-def _copy_drive_file(file_id, new_title, description):
-    """Makes a copy of the given Google Drive file (i.e., spreadsheet), with a
-    new title.
-    """
-    googledata = GoogleData()
-    drive_service = googledata.get_drive_service()
-
-    drive_files = drive_service.files()              # pylint: disable=E1103
-    drive_permissions = drive_service.permissions()  # pylint: disable=E1103
-
-    # Get the parent folder(s)
-    # (this is essential to maintain share permissions)
-    file_info = drive_files.get(fileId=file_id).execute()
-
-    # Make the copy
-    request_body = {
-        'title': new_title,
-        'description': description,
-        'parents': file_info['parents'],
-        }
-    req = drive_files.copy(fileId=file_id, body=request_body)
-    new_file_info = req.execute()
-
-    # Transfer ownership from the service account to the real user account
-    req = drive_permissions.getIdForEmail(email=config.MASTER_EMAIL_ADDRESS)
-    master_permissions_info = req.execute()
-
-    req = drive_permissions.update(
-        fileId=new_file_info['id'],
-        permissionId=master_permissions_info['id'],
-        transferOwnership=True,
-        body={'role': 'owner'})
-    req.execute()
-
-
-def _get_members_renewed_ago(after_datetime, before_datetime):
+def _get_members_renewed_ago(
+    after_datetime: Optional[datetime.datetime],
+    before_datetime: Optional[datetime.datetime]) -> List[sheetdata.Row]:
     """Get the members who were last renewed within the given window.
     Args:
         after_datetime (datetime): Members must have been renewed *after* this
@@ -651,7 +537,7 @@ def _get_members_renewed_ago(after_datetime, before_datetime):
         before_datetime (datetime): Members must have been renewed *before*
             this date. Optional.
     Returns:
-        List of member list entries. (Caller can get dict with `.to_dict()`.)
+        List of member rows.
     """
 
     # Note that dates get returned from the spreadsheet as locale-formatted
@@ -659,22 +545,18 @@ def _get_members_renewed_ago(after_datetime, before_datetime):
     # Instead we're going to have to go through the whole set and filter them
     # from there.
 
-    assert(after_datetime or before_datetime)
+    assert after_datetime or before_datetime
 
-    googledata = GoogleData()
-    list_entries = googledata.get_list_entries(config.MEMBERS_SPREADSHEET_KEY,
-                                               config.MEMBERS_WORKSHEET_KEY)
+    all_rows = sheetdata.find_rows(_S.member, matcher=None)
 
     results = []
 
-    for entry in list_entries:
-        entry_dict = entry.to_dict()
-
-        renewed_date = entry_dict.get(config.MEMBER_FIELDS.renewed.name)
+    for row in all_rows:
+        renewed_date = row.dict.get(_S.member.fields.renewed.name)
 
         # Use Joined date if Renewed is empty
         if not renewed_date:
-            renewed_date = entry_dict.get(config.MEMBER_FIELDS.joined.name)
+            renewed_date = row.dict.get(_S.member.fields.joined.name)
 
         # Convert date string to datetime
         if renewed_date:
@@ -697,32 +579,6 @@ def _get_members_renewed_ago(after_datetime, before_datetime):
 
         # If we passed those two checks, then it's a hit.
 
-        results.append(entry)
+        results.append(row)
 
     return results
-
-
-def _update_all_members_address_latlong():
-    """One-off helper to fill in the `address_latlong` field for legacy members.
-    """
-
-    googledata = GoogleData()
-    list_entries = googledata.get_list_entries(config.MEMBERS_SPREADSHEET_KEY,
-                                               config.MEMBERS_WORKSHEET_KEY)
-
-    for list_entry in list_entries:
-        member_dict = list_entry.to_dict()
-
-        if member_dict.get(config.MEMBER_FIELDS.address_latlong.name):
-            continue
-
-        latlong = helpers.latlong_for_record(config.MEMBER_FIELDS, member_dict)
-
-        if not latlong:
-            continue
-
-        list_entry.set_value(config.MEMBER_FIELDS.address_latlong.name,
-                             latlong)
-
-        _update_list_entry(list_entry)
-

@@ -1,6 +1,6 @@
 /*
  * Copyright Adam Pritchard 2014
- * MIT License : http://adampritchard.mit-license.org/
+ * MIT License: https: //adampritchard.mit-license.org/
  */
 
 /* jshint sub:true */
@@ -12,6 +12,11 @@
 
   // This is repeated in config/__init__.py
   _this.MULTIVALUE_DIVIDER = '; ';
+  _this.CSRF_TOKEN_KEY = 'csrf_token';
+  _this.EMBEDDER_KEY = '_embedder';
+  _this.GEOPOSITION_KEY = 'geoposition';
+  _this.EMAIL_KEY = 'email';
+  _this.PAYMENT_METHOD_NAME = 'payment_method';
 
   //
   // Fancy checkbox functions
@@ -167,10 +172,8 @@
 
     // Add geoposition if available
     if (_geoposition) {
-      // TODO: Don't hardcode field names
-
-      data['geoposition'] = '' + _geoposition.coords.latitude + ', ' +
-                                 _geoposition.coords.longitude;
+      data[_this.GEOPOSITION_KEY] = '' + _geoposition.coords.latitude + ', ' +
+                                    _geoposition.coords.longitude;
     }
 
     data = cleanMemberFormData(data);
@@ -179,27 +182,51 @@
     // When we POST this data, the 'Referer' will be our own URL. If we're in
     // an iframe we also want to know the parent URL, so we'll include that in
     // the data.
-    if (window !== window.top) {
-      // TODO: don't hardcode the key
-      data['_referrer'] = document.referrer;
-    }
+    data[_this.EMBEDDER_KEY] = (window.location != window.parent.location) ? document.referrer : document.location.href;
 
     _this.waitModalShow($modal);
 
+    // Add a custom header to help with CSRF mitigation.
+    $.ajaxSetup({
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': data[_this.CSRF_TOKEN_KEY]
+      }
+    });
+
     var jqxhr = $.post($form.attr('action'), data)
         .done(function() {
-          console.log('success', arguments);
-          _this.waitModalSuccess($modal);
+          console.log('xhr done', arguments);
 
-          if (form_mode === 'self-serve' && jqxhr.responseText !== 'success') {
+          // We are currently showing the modal. In some cases (PayPal) we want to redirect
+          // immediately. In other cases we want to wait until a button is clicked.
+          if (form_mode === 'self-serve' && jqxhr.responseText.startsWith('https://')) {
             // The server gave us a Paypal URL to go to. Redirect there.
             // TODO: move this into self-serve-join.js
             $modal.find('.waitModalRedirectLink').prop('href', jqxhr.responseText);
             window.top.location = jqxhr.responseText;
           }
+          else if (form_mode === 'self-serve' && jqxhr.responseText === 'demo') {
+            alert('On a non-demo server, you would now be redirected to PayPal.\nInstead, your changes have been saved directly.')
+          }
+          else {
+            $modal.find('.doneBtn').click(function (event) {
+              event.preventDefault();
+              if (location.hash.startsWith('#nextURL=')) {
+                let nextURL = decodeURIComponent(location.hash.slice('#nextURL='.length));
+                window.top.location = nextURL;
+              } else {
+                window.top.location = '/';
+              }
+              return false;
+            });
+          }
+
+          // Show the correct buttons.
+          _this.waitModalSuccess($modal);
         })
         .fail(function() {
-          console.log('fail', arguments);
+          console.log('xhr fail', arguments);
           var retry, conflict_email;
 
           // Some errors we handle specially...
@@ -211,8 +238,7 @@
             // User tried to create a member with the same email address as
             // an already existing member. We'll guide the user toward the
             // renew page.
-            // TODO: don't hardcode this field name
-            conflict_email = data['email'];
+            conflict_email = data[_this.EMAIL_KEY];
           }
 
           _this.waitModalError($modal, jqxhr.statusText, jqxhr.responseText,
@@ -228,6 +254,18 @@
     _.forOwn(data, function(val, key) {
       if (_(val).isArray()) {
         data[key] = _.compact(val).join(_this.MULTIVALUE_DIVIDER);
+      }
+    });
+
+    // If a group of checkboxes has no checked items, it will be completely absent from
+    // `data`. This will be misinterpreted on the server side (treated as null/None) and
+    // the corresponding spreadsheet field will retain its previous value rather than
+    // being cleared. (This could alternatively be fixed on the server side, but I think
+    // that it's sensible to do it here.)
+    $('[data-field-group-name]').each(function () {
+      var fieldName = $(this).data('field-group-name');
+      if (!data[fieldName]) {
+        data[fieldName] = $(this).data('field-group-default');
       }
     });
 

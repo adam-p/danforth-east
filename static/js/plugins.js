@@ -1,6 +1,6 @@
 /*
  * Copyright Adam Pritchard 2014
- * MIT License : http://adampritchard.mit-license.org/
+ * MIT License : https://adampritchard.mit-license.org/
  */
 
 // From: http://stackoverflow.com/a/2419877

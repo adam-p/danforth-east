@@ -1,17 +1,10 @@
 /*
  * Copyright Adam Pritchard 2014
- * MIT License : http://adampritchard.mit-license.org/
+ * MIT License : https://adampritchard.mit-license.org/
  */
 
 $(function() {
   "use strict";
-
-  if (document.referrer) {
-    // After a successful creation we want to move the user off the
-    // registration page. We'll send them to the root of the domain.
-    var doneURL = document.referrer.split('/').slice(0, 3).join('/');
-    $('#newVolunteer .doneBtn').attr('href', doneURL);
-  }
 
   var inIframe = (window !== window.top);
 

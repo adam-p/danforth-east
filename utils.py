@@ -2,7 +2,7 @@
 
 #
 # Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# MIT License : https://adampritchard.mit-license.org/
 #
 
 """General utility functions that mostly aren't specific to this application.
@@ -13,57 +13,43 @@ import errno
 import datetime
 import logging
 
-from google.appengine.api import mail
-import pytz
 import dateutil.parser
+import dateutil.tz
 
 import config
-
-
-_no_spaces_re = re.compile('[^\w-]')
-
-
-def title_to_name(title):
-    """When a spreadsheet is accessed using the "list-based feed" API, it
-    converts column names to all lowercase in the resulting dict.
-    """
-    return _no_spaces_re.sub('', title).lower()
-
-
-string_types = (str, unicode) if str is bytes else (str, bytes)
-
-
-def email_validator(val, required):
-    if required and not val:
-        return False
-
-    if type(val) not in string_types:
-        return False
-
-    if not val and not required:
-        return True
-
-    return mail.is_email_valid(val)
 
 
 def basic_validator(val, required):
     if required and not val:
         return False
 
-    if type(val) not in string_types:
+    if val is None:
+        return True
+
+    if not isinstance(val, str):
+        return False
+
+    return True
+
+
+def email_validator(val, required):
+    if not basic_validator(val, required):
+        return False
+
+    if not val:
+        return True
+
+    if not re.fullmatch(r'[^@]+@[^@]+\.[^@]+', val):
         return False
 
     return True
 
 
 def latlong_validator(val, required):
-    if required and not val:
+    if not basic_validator(val, required):
         return False
 
-    if type(val) not in string_types:
-        return False
-
-    if not val and not required:
+    if not val:
         return True
 
     latlong = val.split(', ')
@@ -84,9 +70,8 @@ def latlong_validator(val, required):
 def current_datetime():
     """Returns string of current datetime.
     """
-    #return datetime.datetime.now(pytz.timezone(config.TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
-    # We only want the date and not the time.
-    return datetime.datetime.now(pytz.timezone(config.TIMEZONE)).strftime('%Y-%m-%d')
+    # We only want the date and not the time (and it needs to be tz-aware).
+    return datetime.datetime.now(dateutil.tz.gettz(config.TIMEZONE)).strftime('%Y-%m-%d')
 
 
 def days_ago(datestring):

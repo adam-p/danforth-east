@@ -11,7 +11,7 @@
 </div>
 
 {% import 'imports/new-member-form.jinja' as member_form %}
-{{ member_form.member_form(FIELDS, csrf_token, volunteer_interests, skills_categories) }}
+{{ member_form.member_form(app_config, volunteer_interests, skills_categories) }}
 
 {% endblock content %}
 

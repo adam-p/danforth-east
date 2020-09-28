@@ -2,87 +2,26 @@
 
 #
 # Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# MIT License : https://adampritchard.mit-license.org/
 #
 
 """Helpers that are specific to this application.
 """
 
 
+from typing import List
 import random
 import datetime
-
 import logging
-import webapp2
+import flask
 import geopy
 
-import utils
 import config
-
-
-# From https://webapp-improved.appspot.com/guide/exceptions.html
-class BaseHandler(webapp2.RequestHandler):
-    def handle_exception(self, exception, debug):
-        # Log the error.
-        logging.critical('BaseHandler exception', exc_info=exception)
-
-        # Set a custom message.
-        if hasattr(exception, 'detail') and getattr(exception, 'detail'):
-            self.response.write(getattr(exception, 'detail'))
-
-        # If the exception is a HTTPException, use its error code.
-        # Otherwise use a generic 500 error code.
-        if isinstance(exception, webapp2.HTTPException):
-            self.response.set_status(exception.code)
-        else:
-            self.response.set_status(500)
-
-
-_CSRF_FIELD_NAME = 'csrf-token'
-
-
-def get_csrf_token(request):
-    """Get the current CSRF (cross-site request forgery attack) token from the
-    request. If there isn't one, generate one.
-    Returns a string.
-    """
-    cookie_csrf_token = request.cookies.get(_CSRF_FIELD_NAME)
-
-    if not cookie_csrf_token:
-        # The prepended string is only to make it a little clearer when debugging.
-        cookie_csrf_token = 'csrf' + str(random.getrandbits(128))
-
-    return cookie_csrf_token
-
-
-def check_csrf(request):
-    """Checks that the cross-site request forgery check values are correst in
-    the request. Aborts request if not. Does not return a value.
-    """
-
-    # It's important to make sure the cookie isn't empty, otherwise the attacker
-    # could send the attack-POST before the user hits the page for the first
-    # time and gets a cookie.
-    cookie_csrf_token = request.cookies.get(_CSRF_FIELD_NAME)
-    request_csrf_token = request.get(_CSRF_FIELD_NAME)
-    if not cookie_csrf_token or request_csrf_token != cookie_csrf_token:
-        logging.error('CSRF mismatch: req csrf=>>%s<<; cookie csrf=>>%s<<',
-                      request_csrf_token, cookie_csrf_token)
-        webapp2.abort(403, detail='CSRF check fail. Make sure you have cookies enabled. Reload this page and try again.')
-
-
-def set_csrf_cookie(response, csrf_token):
-    """Set the CSRF token as a cookie in the response.
-    """
-    response.set_cookie(_CSRF_FIELD_NAME, value=csrf_token,
-                        #secure=True,  # It would be nice to set this, but it messes up local testing. Since we only allow HTTPS connections, it's probably okay to leave this False...?
-                        httponly=True, path='/',
-                        expires=datetime.datetime.now()+datetime.timedelta(7))
 
 
 def latlong_for_record(fields, record_dict):
     """Get a "latitude, longitude" string for the address of the given record.
-    `fields` should be config.MEMBER_FIELDS or config.VOLUNTEER_FIELDS -- i.e.,
+    `fields` should be SHEETS.member.fields or SHEETS.volunteer.fields -- i.e.,
     something with appropriate address components.
     Returns empty string if geocoding is not possible.
     """
@@ -119,14 +58,14 @@ def latlong_for_record(fields, record_dict):
     return '%s, %s' % (location.latitude, location.longitude)
 
 
-def address_from_latlong(latlong):
+def address_from_latlong(latlong: str):
     """Reverse geocode the given latitude and longitude.
     `latlong` must be a string with two floats separated by a comma+space,
     like: "44.842, -84.238".
     Returns empty string on failure.
     """
 
-    if not latlong or type(latlong) not in utils.string_types:
+    if not latlong or not isinstance(latlong, str):
         return ''
 
     point = latlong.split(', ')
@@ -138,11 +77,11 @@ def address_from_latlong(latlong):
 
     res = None
     try:
-        res = geocoder.reverse(point)
-    except Exception, e:
+        res = geocoder.reverse(point, exactly_one=True)
+    except Exception as e:
         logging.error('Geocoder exception', exc_info=e)
 
     if not res:
         return ''
 
-    return res[0].address
+    return res.address

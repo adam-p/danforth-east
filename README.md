@@ -17,7 +17,7 @@ Demo
 
 The demo management site is located at: https://mmbrmgmt.appspot.com
 
-The demo form-embedded-in-organization-website page is located at: https://s3.amazonaws.com/mmbrmgmt/iframe-test-custom.html
+The demo form-embedded-in-organization-website page is located at: https://mmbrmgmt.s3.amazonaws.com/iframe-test-custom.html
 
 The spreadsheets acting as the "database" for this demo are:
 
@@ -31,22 +31,22 @@ The spreadsheets acting as the "database" for this demo are:
 Introduction
 ------------
 
-The [Danforth East Community Association](http://deca.to/) asked me to help update their/our membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email.
+The [Danforth East Community Association](https://deca.to/) asked me to help update their/our membership management system. They had been using pieces of paper with new member info, an Excel spreadsheet on someone's computer, and manual responses to PayPal notification email.
 
 The requirements were/are something like:
 
 * There are a few hundred members.
 * There are about 12 association managers.
 * People register online and in-the-field (mostly at the local farmers' market).
-  - When joining online, people pay with PayPal or indicate that they'll mail/deliver cheque or cash later.
-  - When joining at the farmers' market, member typically hands over cash.
+  - When joining online, new members pay with PayPal or indicate that they'll mail/deliver cheque or cash later.
+  - When joining at the farmers' market, new members typically hand over cash.
 * Some volunteer management help would be nice to have.
 * Mapping of member locations would be nice to have.
 * It would be nice to be able to register people at the farmers' market on an iPad, etc.
 
 And some self-imposed requirements:
 
-* If I get hit by a truck, non-devs should be at least able to salvage the data.
+* If I get hit by a truck, non-devs should at least be able to salvage the data.
 * I didn't want to become the webmaster of the association website.
 
 I looked into existing solutions and didn't find much. [CiviCRM](https://civicrm.org/) is very interesting, but it seemed like overkill, and it seemed like a lot of learning and training. (Of course, in retrospect, it would have been less work to do the learning and training.)
@@ -59,9 +59,9 @@ So I settled on using Google App Engine (GAE), with Google Spreadsheets as the d
 How it works
 ------------
 
-From the user side, there are two aspects to the system: there is the publicly accessible self-registration form and there is the authorized access to direct member joining, renewal, mapping, etc.
+From the user side, there are two aspects to the system: there is the publicly accessible self-registration form and there is the authorized access to do direct member joining, renewal, mapping, etc.
 
-On the back end, there's some fairly simple [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete)-ish code made more complicated by the fact that instead of a local database it's talking to the Google Spreadsheets API. There's also application logic around processing [PayPal IPNs](https://developer.paypal.com/webapps/developer/docs/classic/products/instant-payment-notification/), emailing new member and volunteeer managers, culling defunct members, and so on.
+On the back end, there's some fairly simple [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete)-ish code made more complicated by the fact that instead of a local database it's talking to the Google Spreadsheets API. There's also application logic around processing [PayPal IPNs](https://developer.paypal.com/webapps/developer/docs/classic/products/instant-payment-notification/), emailing new member and volunteeer managers, culling defunct members, and so on.
 
 ### Spreadsheets?
 
@@ -82,7 +82,7 @@ Loading the `/new-member` page takes about 420ms. The creation of a user takes a
 
 Retrieving a JSON'd list of all member data (for 200 members) takes about 1000ms. This isn't great, but it's done via AJAX and it's tolerable.
 
-(In the GAE test environment, there are pretty frequent invalid certificate errors when trying to access the Spreadsheets API. In the real GAE environment I'm not sure I've ever seen them.)
+(Those load times seem to be getting longer since I originally wrote that. It bears some investigation.)
 
 ### `iframe`ing the self-serve registration
 
@@ -102,13 +102,7 @@ Please file and issue or pull request if encounter a problem with these steps (o
 
 ### Get the code
 
-Clone this repo (or fork, which you'll want to do eventually). Install the [Google App Engine SDK for Python](https://developers.google.com/appengine/downloads).
-
-Open a terminal in the repo root directory and run:
-
-```
-pip install -r requirements.txt -t lib/
-```
+Clone this repo (or fork, which you'll want to do eventually). Install the [Google App Engine SDK for Python](https://cloud.google.com/appengine/docs/standard/python3/setting-up-environment).
 
 Rename `config/private.py.sample` to `config/private.py` (Henceforth referred to as `private.py`.) Leave that file open, since you'll be editing it.
 
@@ -121,16 +115,24 @@ You probably want to set up mail forwarding from that new account to your own, a
 
 Henceforth I'll be assuming that you're logged in with and using that account. However, you can do stuff like adding your personal account as an admin of the GAE project, which allows you to do a lot without logging in as the other account.
 
-In `private.py` set `MASTER_EMAIL_ADDRESS` to the account email address. Also add the email to the `ALLOWED_EMAIL_TO_ADDRESSES` list.
+In `private.py` set `MASTER_EMAIL_ADDRESS` to the account email address.
 
 
 ### App Engine project
 
-Create your new GAE project. Probably via [here](https://console.developers.google.com/project). Edit `app.yaml` and replace the `application` value with whatever you picked as your GAE project name.
+Create your new GAE project. Probably via [here](https://console.developers.google.com/project).
 
-When that is complete, click on the "Enable an API" button, or "APIs & Auth/APIs" in the left sidebar. Then enable Drive API, Drive SDK, Geocoding API, and Google Maps JavaScript API v3. [Note: Not sure Drive SDK is necessary.]
+When that is complete, click on the "Enable an API" button, or "APIs & Auth/APIs" in the left sidebar. Then enable:
+* Cloud Tasks API
+* Sheets API
+* Drive API [Note: not sure this is necessary]
+* Drive SDK
+* Geocoding API
+* Google Maps JavaScript API v3
 
-Click on "Credentials" in the left sidebar. Click on "Create new Client ID", then "Service account", then "Create Client ID". A JSON file with the new credentials and key will download. Save the contents of the `private_key` field to a file named `privatekey.pem` in the root of your source directory (replacing `\n` with actual newlines). Copy the `client_email` value and set as `SERVICE_ACCOUNT_EMAIL` in `private.py`.
+[These instructions need to be updated for the new Google Cloud UI.]
+
+Get the Service Account credentials JSON. (After Service Account creation, this can be done by adding a new key to the account.) This file should be saved in the project directory and the filename set in `private.py` as `SERVICE_ACCOUNT_CREDS_JSON_FILE_PATH`. [TODO: expand SA creation.]
 
 [Note: I think there's a default service account for the GAE project, but I couldn't figure out how to get the key for it. Maybe instead you generate and upload its key?]
 
@@ -138,36 +140,40 @@ Under "Public API access" click on "Create new Key". Click on "Server key". Leav
 
 Under "Public API access" click on "Create new Key". Click on "Browser key". Leave the referrers field blank (for now). Copy the new "API Key" and set as `GOOGLE_BROWSER_API_KEY` in `private.py`.
 
+[Google Sign In](https://developers.google.com/identity/sign-in/web/sign-in) requires an OAuth client ID. On the API Credentials page, click "Create Credentials", then "OAuth Client ID". For "Application Type" choose "Web application". Name it "Google User Auth" or something meaningful to you. Under "Authorized JavaScript Origins" add the origin for your site, like `https://myproject.appspot.com`. If you plan to run the server locally for testing, you might also want to add `http://localhost:5000` or whatever. These values are modifiable later. (DO NOT launch the service with localhost origins allowed.) You won't need the Client Secret, but copy the Client ID and set it `private.py` as the value for `GOOGLE_SIGNIN_CLIENT_ID`.
+
 
 ### Google Drive
 
 In that account, go to Google Drive and create a new folder. Share that folder with edit permissions with:
 
-- The `SERVICE_ACCOUNT_EMAIL` from `private.py`.
+- The email address of the Service Account associated with the credentials JSON file (the email can be found in the JSON).
 - Your own personal email address.
-- Whomever else is going to managing members.
+- Whomever else is going to be managing members.
 
 In that folder you will be creating the "database" spreadsheets. Open `config/__init__.py` to see what fields they should have. Create these spreadsheets (the name isn't actually important, but it'll be easier if you follow what's here):
-- Create a spreadsheet called "Authorized users" and create columns headers with the names in `AUTHORIZED_FIELDS`.
-- Create "Members" with the column headers from `MEMBER_FIELDS`.
-- Create "Volunteers" with the column headers from `VOLUNTEER_FIELDS`.
-- Create "Volunteer Interest Areas" with the column headers from `VOLUNTEER_INTEREST_FIELDS`.
-- Create "Skills Categories" with the column headers from `SKILLS_CATEGORY_FIELDS`.
+- Create a spreadsheet called "Authorized users" and create columns headers with the names in `AUTHORIZED_SHEET`.
+- Create "Members" with the column headers from `MEMBER_SHEET`.
+- Create "Volunteers" with the column headers from `VOLUNTEER_SHEET`.
+- Create "Volunteer Interest Areas" with the column headers from `VOLUNTEER_INTEREST_SHEET`.
+- Create "Skills Categories" with the column headers from `SKILLS_CATEGORY_SHEET`.
 
-In the "Authorized users" sheet, add your personal email address and `test@example.com`. Also add a few entries to "Volunteer Interest Areas".
+In the "Authorized users" sheet, add your personal email address and `test@example.com` (for now). Also add a few entries to "Volunteer Interest Areas".
 
-For each spreadsheet, copy the big random-looking value from the URL and paste that value into the appropriate `*_SPREADSHEET_KEY`.
+For each spreadsheet, copy the big random-looking value from the URL and paste that value into the appropriate `*_SPREADSHEET_ID`.
 
 To get the keys for the first worksheet of each of those spreadsheets, run this command:
 
 ```
-python first_sheet_keys.py
+python first_sheet_title.py
 ```
 
-Put the values it prints into the appropriate `*_WORKSHEET_KEY`. (For brand new spreadsheets they will probably be all the same value, and the same as the values already in `private.py` and you'll think this step is silly. But if you mess around with creating and deleting sheets the values will change.)
+Put the values it prints beside the appropriate `*_SPREADSHEET_ID` values. (For brand new spreadsheets they will probably be all the same value, and the same as the values already in `private.py` and you'll think this step is silly. But if you mess around with creating and deleting sheets the values will change.)
 
 
 ### Try out the management site
+
+TODO: Update this for the new `gcloud` and/or locally running Flask.
 
 We're not done configuring stuff yet, but you can try out some of the functionality now.
 
@@ -220,9 +226,14 @@ MailChimp integration can be disabled by setting `MAILCHIMP_ENABLED` to `False` 
 5. You may wish to create "Segments" for the list. For example, you could create a segment for "'Volunteer Interests' contains 'Arts Fair'", so you can easily email everyone interested in volunteering for the arts fair.
 
 
+### Sendgrid
+
+TODO
+
+
 ### Deploy to App Engine
 
-In Google App Engine Launcher click the deploy button (or use the command line stuff). You can authenticate with the credentials of the account that owns the project, or with any account added as an admin (like your personal account).
+With the `gcloud` CLI tool, run `gcloud app deploy`. Note that if you change `cron.yaml`, it needs to be deployed with `gcloud app deploy cron.yaml`.
 
 Test out the deployed project at [https://myproject.appspot.com](https://myproject.appspot.com).
 
@@ -244,11 +255,11 @@ Note that if you test the entire self-serve workflow -- including PayPal -- loca
 
 ### Finishing steps
 
-There are occurences of branding in files that aren't yet properly parameterized, so you should search for "deca" or "danforth" in source files for strings you should change for your own organization.
+There are occurrences of branding in files that aren't yet properly parameterized, so you should search for "deca" or "danforth" in source files for strings you should change for your own organization.
 
 * Replace the contents of `templates/tasks/email-*` files to match your community organization.
 
-* Change the timezone in `cron.yaml` and `config/__init__.py` to your own. List of [possible timezones here](http://en.wikipedia.org/wiki/List_of_zoneinfo_time_zones).
+* Change the timezone in `cron.yaml` and `config/__init__.py` to your own. List of [possible timezones here](https://en.wikipedia.org/wiki/List_of_zoneinfo_time_zones).
 
 * You might want to change "Postal Code" to your local equivalent.
 
@@ -273,11 +284,10 @@ First of all, after changing your config to production values you're going to ha
   - Double-check `config.PAYPAL_TXN_item_name`.
 
 * Change `config.DEBUG` to `False`.
-  - Note that this will automatically disable the `ALLOWED_EMAIL_TO_ADDRESSES` restriction.
 
 * Make sure `config.ALLOWED_EMBED_REFERERS` is set properly. Except... we don't use it at all right now, so never mind.
 
-* For your Google API keys, the "APIs & Auth/Credentials" console: properly set allowed referers for the browser key and allowed IPs for the server key.
+* For your Google API keys, the "APIs & Auth/Credentials" console: properly set allowed referrers for the browser key and allowed IPs for the server key.
 
 
 Instructions to Organization Managers
@@ -388,7 +398,7 @@ Future work
 
 * Offline sign-up. I'm not sure yet how necessary this is, but...
   - Scenario: Signing up members at the Farmers' Market on an iPad that has no network. (Why not just tether? Anyway...)
-  - Could do [HTML5 offline](http://www.html5rocks.com/en/features/offline) stuff. (Will need a bit of that for any solution -- to detect offline.)
+  - Could do [HTML5 offline](https://www.html5rocks.com/en/features/offline) stuff. (Will need a bit of that for any solution -- to detect offline.)
   - Submitting could detect offline and put data (YAML, JSON) into the body of an email that will get sent next time the device goes back online. (With a GAE auto-receiver.)
     - Should have from-address auth.
   - Offline creation obviously means that the user/member can't be prompted for anything by the server.
@@ -398,18 +408,13 @@ Future work
 
 ### Technical
 
-* Put the contents of `privatekey.pem` into `private.py` instead of reading from a file.
-
 * Self-serve: Limit non-PayPal sign-ups per day.
   - There isn't yet a "mail in a cheque" option on the self-serve registration, but there probably will be (since there was on the original site). That option removes the money-gate of the PayPal option and introduces the possibility of someone spamming the form and filling the spreadsheet with crap.
   - I think that the "mail in a cheque" option will probably not be super popular, so it's probably safe -- and good -- to add a, say, 10-per-day limit on sign-ups with that option.
 
 * Self-serve: Provide a mechanism for the parent page to provide styling to the form. If the webmaster wants to change the organization site they shouldn't have to talk to me to make the styles match.
 
-* Modify `helpers.BaseHandler` (create a subclass, probably) so that `post()` always does CSRF.
-
-* Create a subclass of `helpers.BaseHandler` to always do user-logged-in checks. (Maybe same subclass as CSRF checks.)
-  - Remember that `@check_login` can only be used for `get()`.
+* Create decorators or something to ensure that task/cron job validation checks aren't forgotten.
 
 * Styling and imagery -- both for customization and handsomeness and usability. Right now it's default Bootstrap. It's even using the HTML5BP favicon.
   - Keep in mind that the self-serve form needs to match embedding site.
@@ -418,7 +423,8 @@ Future work
 
 * Make it easier for people to adapt this to other organizations.
 
-* I'm not sure there's much benefit to having the authorization table be in a spreadsheet vs. GAE's NDB. Probably move it there and add some CRUD.
+* I'm not sure there's much benefit to having the authorization table be in a spreadsheet vs. GAE's NDB. Probably move it there and add some CRUD. This will likely help response times a lot on auth-required pages.
+  - This falls under "if I get hit by a bus, it's okay if this data is irretrievable".
 
 * Make Bootstrap a git submodule, with just `variables.less` under our source control.
 
@@ -428,9 +434,9 @@ Future work
   - Use Drive API to detect spreadsheet modifications (maybe in a fast-ish `cron` job -- not blocking request).
   - Move auth to NDB completely (there's another item here for that).
   - Make volunteer interest list stuff AJAX rather than server-side rendered in template.
+    - This also falls under "if I get hit by a bus, it's okay if this data is irretrievable".
 
 * Page template caching: Templates that don't have really dynamic content (like, just field names) should not be rendered on each request, just once -- either before deploying (maybe when saving file) or at app start-up time. ("App start-up time" might be bad as well. That happens pretty often and we don't want to add more work.)
-  - App start-up time: probably/maybe in `appengine_config.py`
   - the only(?) dynamic thing is the volunteer interest list...?
     - could/should get that list via JS
   - could re-render templates via cron

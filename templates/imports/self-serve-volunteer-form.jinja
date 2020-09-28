@@ -1,13 +1,13 @@
 {% import 'imports/volunteer-form-fields.jinja' as volunteer_form_fields %}
 
-{% macro self_serve_volunteer_form(fields, csrf_token, volunteer_interests, skills_categories) -%}
+{% macro self_serve_volunteer_form(app_config, volunteer_interests, skills_categories) -%}
 
 <div id="newVolunteer">
 
   {# TODO: don't hardcode action #}
   <form action="/self-serve/volunteer" role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-    {{ volunteer_form_fields.volunteer_form_fields('self-serve', fields, csrf_token, volunteer_interests, skills_categories) }}
+    {{ volunteer_form_fields.volunteer_form_fields('self-serve', app_config, volunteer_interests, skills_categories) }}
 
     <div class="row">
 
@@ -67,7 +67,7 @@
           <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
           <button type="button" class="waitModalRetry btn btn-primary btn-lg retry-show hidden">Retry</button>
         </div>
-        <div class="modal-footer error-hide success-show">
+        <div class="modal-footer error-hide success-show hidden">
           <a href="#" target="_top" class="doneBtn btn btn-primary btn-lg" role="button">Done!</a>
         </div>
       </div>

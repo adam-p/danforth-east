@@ -8,20 +8,67 @@
 {% block header %}{% endblock %}
 
 {% block content %}
+
 <div class="jumbotron">
   <h1>DECA Member Management</h1>
 
-  {% if user %}
+  {% if current_user.is_authenticated %}
     <p>
-      Welcome, {{ user.email() }}.
+      Welcome, {{ current_user.id }}.
     </p>
     <p>
-      (Not the right account? <a href="{{ logout_url|safe }}">Sign out.</a>)
+      (Not the right account? <a href="/logout">Sign out.</a>)
     </p>
   {% else %}
     <p>
       Expect to have to log in with a Google account before proceeding.
     </p>
+  {% endif %}
+
+  {% if app_config.DEMO %}
+    <div class="bg-warning">
+      <strong>Demo notes:</strong>
+      <ul>
+        <li>
+          Github project: <a href="https://github.com/adam-p/danforth-east">https://github.com/adam-p/danforth-east</a>
+        </li>
+        <li>
+          Also check out the <strong><a href="https://mmbrmgmt.s3.amazonaws.com/iframe-test-custom.html">self-serve registration form</a></strong>, which would be embedded in the organization website.
+        </li>
+        <li>
+          You must be logged in with a Google account to try this demo, but your email address doesn't have to be in the "Authorization" spreadsheet.
+        </li>
+        <li>
+          If you use a real street address for your fake member it will help the members map make more sense.
+        </li>
+        <li>
+          The spreadsheets that function as the "database" for this demo are:
+          <ul>
+            <li>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.MEMBERS_SPREADSHEET_ID }}/edit?usp=sharing">Members</a> (cleared out periodically for demo)
+            </li>
+            <li>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.VOLUNTEERS_SPREADSHEET_ID }}/edit?usp=sharing">Volunteers</a> (cleared out periodically for demo)
+            </li>
+            <li>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.VOLUNTEER_INTERESTS_SPREADSHEET_ID }}?usp=sharing">Volunteer Interest Areas</a>
+            </li>
+            <li>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.SKILLS_CATEGORIES_SPREADSHEET_ID }}-YAeao/edit?usp=sharing">Skills Categories</a>
+            </li>
+            <li>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.AUTHORIZED_SPREADSHEET_ID }}?usp=sharing">Authorized Users</a> (not used in demo)
+            </li>
+          </ul>
+        </li>
+        <li>
+          When registering or renewing via this site, your email address would normally be recorded. For the demo it is not.
+        </li>
+        <li>
+          No welcome emails will be sent by this demo.
+        </li>
+      </ul>
+    </div>
   {% endif %}
 
   <hr>

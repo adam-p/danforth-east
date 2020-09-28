@@ -1,6 +1,6 @@
 {% import 'imports/form-field.jinja' as form_field %}
 
-{% macro volunteer_form_fields(create_or_self_serve, fields, csrf_token, volunteer_interests, skills_categories) -%}
+{% macro volunteer_form_fields(create_or_self_serve, app_config, volunteer_interests, skills_categories) -%}
 
   {% set bv_common = 'data-bv-message="This value is not valid" data-bv-notempty-message="This value is required" data-bv-emailaddress-message="This value is not a valid email address" ' %}
 
@@ -16,29 +16,29 @@
                                attrs=bv_common, autocomplete=autocomplete) }}
   {%- endmacro %}
 
-  <input name="{{fields.volunteer.id.name}}" type="hidden" class="hidden" />
-  <input name="csrf-token" type="hidden" class="hidden" value="{{csrf_token}}" />
+  <input name="{{app_config.SHEETS.volunteer.fields.id.name}}" type="hidden" class="hidden" />
+  <input name="csrf_token" type="hidden" class="hidden" value="{{ csrf_token() }}" />
 
   <fieldset>
     <legend>Name</legend>
 
     <div class="row">
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.first_name) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.first_name) }}
       </div>
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.last_name) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.last_name) }}
       </div>
     </div>
 
     <div class="row">
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.email,
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.email,
                          type='email',
                          placeholder='hello@example.com') }}
       </div>
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.phone_num) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.phone_num) }}
       </div>
     </div>
   </fieldset>
@@ -48,21 +48,21 @@
 
     <div class="row">
       <div class="col-sm-3">
-        {{ my_form_field(fields.volunteer.apt_num) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.apt_num) }}
       </div>
       <div class="col-sm-3">
-        {{ my_form_field(fields.volunteer.street_num) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.street_num) }}
       </div>
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.street_name) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.street_name) }}
       </div>
     </div>
     <div class="row">
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.city, value='Toronto') }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.city, value='Toronto') }}
       </div>
       <div class="col-sm-6">
-        {{ my_form_field(fields.volunteer.postal_code) }}
+        {{ my_form_field(app_config.SHEETS.volunteer.fields.postal_code) }}
       </div>
     </div>
   </fieldset>
@@ -72,15 +72,15 @@
 
     <div class="row">
       <div class="col-sm-12">
-        <label class="{{ 'required' if fields.volunteer.join_location.required else '' }}" style="vertical-align: super;">
+        <label class="{{ 'required' if app_config.SHEETS.volunteer.fields.join_location.required else '' }}" style="vertical-align: super;">
             Joined at Farmers' Market:&nbsp;
         </label>
         <div class="form-group btn-group" data-toggle="buttons">
           <label class="btn btn-default btn-lg">
-            <input type="radio" name="{{ fields.volunteer.join_location.name }}" value="farmers-market">yes
+            <input type="radio" name="{{ app_config.SHEETS.volunteer.fields.join_location.name }}" value="farmers-market">yes
           </label>
           <label class="btn btn-default btn-lg active">
-            <input type="radio" name="{{ fields.volunteer.join_location.name }}" value="" checked>no
+            <input type="radio" name="{{ app_config.SHEETS.volunteer.fields.join_location.name }}" value="" checked>no
           </label>
         </div>
       </div>
@@ -88,10 +88,12 @@
 
     <div class="row">
       <div class="col-sm-12">
-        <label class="{{ 'required' if fields.volunteer.volunteer_interests.required else '' }}">
+        <label class="{{ 'required' if app_config.SHEETS.volunteer.fields.volunteer_interests.required else '' }}">
           We base our success on our volunteers. Let us know if you would like to volunteer for any of the following committees:
         </label>
-        <div class="form-group">
+        <div class="form-group"
+             data-field-group-name="{{ app_config.SHEETS.member.fields.volunteer_interests.name }}"
+             data-field-group-default="">
 
           <div class="row">
             {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
@@ -105,9 +107,9 @@
                   </span>
                   <input type="checkbox"
                          class="hidden"
-                         name="{{ fields.volunteer.volunteer_interests.name }}"
-                         value="{{ volunteer_interest[fields.volunteer_interest.interest.name] }}">
-                  <span class="form-control">{{ volunteer_interest[fields.volunteer_interest.interest.name] }}</span>
+                         name="{{ app_config.SHEETS.volunteer.fields.volunteer_interests.name }}"
+                         value="{{ volunteer_interest[app_config.SHEETS.volunteer_interest.fields.interest.name] }}">
+                  <span class="form-control">{{ volunteer_interest[app_config.SHEETS.volunteer_interest.fields.interest.name] }}</span>
                 </div>
               </div>
               {% if loop.index is divisibleby(3) %}
@@ -123,10 +125,12 @@
 
     <div class="row">
       <div class="col-sm-12">
-        <label class="{{ 'required' if fields.volunteer.skills.required else '' }}">
+        <label class="{{ 'required' if app_config.SHEETS.volunteer.fields.skills.required else '' }}">
           We need help from people with any of the following skills:
         </label>
-        <div class="form-group">
+        <div class="form-group"
+             data-field-group-name="{{ app_config.SHEETS.member.fields.skills.name }}"
+             data-field-group-default="">
 
           <div class="row">
             {# This inputs are not keyboard-accessible and are surely ARIA-unfriendly. TODO: Improve that. #}
@@ -140,9 +144,9 @@
                   </span>
                   <input type="checkbox"
                          class="hidden"
-                         name="{{ fields.volunteer.skills.name }}"
-                         value="{{ skills_category[fields.skills_category.category.name] }}">
-                  <span class="form-control">{{ skills_category[fields.skills_category.category.name] }}</span>
+                         name="{{ app_config.SHEETS.volunteer.fields.skills.name }}"
+                         value="{{ skills_category[app_config.SHEETS.skills_category.fields.category.name] }}">
+                  <span class="form-control">{{ skills_category[app_config.SHEETS.skills_category.fields.category.name] }}</span>
                 </div>
               </div>
               {% if loop.index is divisibleby(3) %}

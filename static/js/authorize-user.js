@@ -1,6 +1,6 @@
 /*
  * Copyright Adam Pritchard 2014
- * MIT License : http://adampritchard.mit-license.org/
+ * MIT License: https: //adampritchard.mit-license.org/
  */
 
 $(function() {
@@ -35,6 +35,14 @@ $(function() {
     console.log(data);
 
     DECA.waitModalShow($('#authorizeUser .waitModal'));
+
+    // Add a custom header to help with CSRF mitigation.
+    $.ajaxSetup({
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': data[DECA.CSRF_TOKEN_KEY]
+      }
+    });
 
     var jqxhr = $.post('', data)
         .done(function() {

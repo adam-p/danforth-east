@@ -1,17 +1,15 @@
 cron:
-- description: Daily exception report
-  url: /_ereporter?sender=pritchard.adam@gmail.com&to=pritchard.adam@gmail.com&versions=all
-  schedule: every day 00:00
 
 # Disabling this job for now.
-#- description: Cull defunct members from members sheet
-#  url: /tasks/member-sheet-cull
-#  schedule: every day 02:00
-#  timezone: America/Toronto
+# - description: Cull defunct members from members sheet
+#   url: /tasks/member-sheet-cull
+#   schedule: every day 02:00
+#   timezone: America/Toronto
 
 - description: Archive last years sheet
   url: /tasks/member-sheet-archive
   schedule: 1 of month 01:00
+  timezone: America/Toronto
 
 - description: Delete expired member candidates from NDB
   url: /self-serve/expire-member-candidates
