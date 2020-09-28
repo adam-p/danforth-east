@@ -25,8 +25,8 @@
   </div>
 </div>
 
-{{ member_form.self_serve_join_form(FIELDS, csrf_token, volunteer_interests, skills_categories, config) }}
-{{ volunteer_form.self_serve_volunteer_form(FIELDS, csrf_token, volunteer_interests, skills_categories) }}
+{{ member_form.self_serve_join_form(app_config, volunteer_interests, skills_categories) }}
+{{ volunteer_form.self_serve_volunteer_form(app_config, volunteer_interests, skills_categories) }}
 
 {% endblock content %}
 

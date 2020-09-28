@@ -1,16 +1,7 @@
-runtime: python27
-api_version: 1
-threadsafe: true
+runtime: python38
 
-libraries:
-- name: webapp2
-  version: "2.5.2"
-- name: jinja2
-  version: "2.6"
-- name: pycrypto
-  version: "2.6"
-- name: ssl
-  version: latest
+automatic_scaling:
+  max_instances: 2
 
 handlers:
 - url: /robots\.txt
@@ -37,46 +28,6 @@ handlers:
   static_dir: static/files
   secure: always
 
-# Admin interface, like the one available via the SDK
-- url: /admin/.*
-  script: google.appengine.ext.admin.application
-  login: admin
-  secure: always
-
-# Daily log emailer
-- url: /_ereporter.*
-  script: google.appengine.ext.ereporter.report_generator.application
-  login: admin
-
-# Stuff like cron jobs and email taskqueues
-- url: /tasks/.*
-  script: tasks.app
-  login: admin
-  secure: always
-
-# The self-serve member join form and PayPal processing
-- url: /self-serve/process-member-worker
-  script: self-serve.app
-  login: admin
-  secure: always
-- url: /self-serve/expire-member-candidates
-  script: self-serve.app
-  login: admin
-  secure: always
-- url: /self-serve/.*
-  script: self-serve.app
-  secure: always
-
-# Everything else -- direct member join and renewal, maps stuff
 - url: /.*
-  script: main.app
+  script: auto
   secure: always
-
-
-skip_files:
-- ^(.*/)?#.*#$
-- ^(.*/)?.*~$
-- ^(.*/)?.*\.py[co]$
-- ^(.*/)?.*/RCS/.*$
-- ^(.*/)?\..*$
-- ^static/vendor/bootstrap/bootstrap-source.*$

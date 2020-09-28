@@ -20,17 +20,17 @@
 <div id="authorizeUser">
   <form role="form" data-bv-trigger="blur" data-bv-submitbuttons="">
 
-    <input name="csrf-token" type="hidden" class="hidden" value="{{csrf_token}}" />
+    <input name="csrf_token" type="hidden" class="hidden" value="{{ csrf_token() }}" />
 
     <div class="row">
       <div class="col-sm-12">
-        {{ form_field.input(FIELDS.authorized.name, attrs=bv_common) }}
+        {{ form_field.input(app_config.SHEETS.authorized.fields.name, attrs=bv_common) }}
       </div>
     </div>
 
     <div class="row">
       <div class="col-sm-12">
-        {{ form_field.input(FIELDS.authorized.email,
+        {{ form_field.input(app_config.SHEETS.authorized.fields.email,
                        type='email',
                        placeholder='hello@example.com',
                        attrs=bv_common) }}

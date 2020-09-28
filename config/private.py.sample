@@ -2,18 +2,27 @@
 
 #
 # Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# MIT License : https://adampritchard.mit-license.org/
 #
 
-"""Configuration values that we don't want to check into source control.
+"""Configuration values that we don't want to check into (public) source control.
 """
+
+#
+# Project config and environment
+#
+
+# Site origins (scheme://hostname:port) that are allowed to embed the self-serve pages.
+SELF_SERVE_ALLOWED_EMBED_ORIGINS = ['https://actual-community-association-site.com', 'https://testbucket.s3.amazonaws.com']
+
 
 #
 # Organization info
 #
 
 MASTER_EMAIL_ADDRESS = 'your-gmail-account@gmail.com'
-MASTER_EMAIL_SEND_ADDRESS = 'Your Neighbourhood Community Association <%s>' % (MASTER_EMAIL_ADDRESS,)
+MASTER_EMAIL_SEND_NAME = 'Your Neighbourhood Community Association'
+MASTER_EMAIL_SEND_ADDRESS = f'{MASTER_EMAIL_SEND_NAME} <{MASTER_EMAIL_ADDRESS}>'
 
 ORGANIZATION_MAILING_ADDRESS_HTML = '''
     Org Name<br>
@@ -28,31 +37,23 @@ MEMBERSHIP_FEE_FLOAT = 10.00
 
 
 #
-# Project set-up
+# App Engine secrets
 #
 
-# Set this to None to allow sending to all addresses. Set to empty list to
-# prevent sending to any address.
-ALLOWED_EMAIL_TO_ADDRESSES = ['your-email@gmail.com',
-                              'another-tester@hotmail.com',
-                              ]
-
-# This isn't actually used at this time.
-ALLOWED_EMBED_REFERERS = ['site-that-will-embed-form.com',
-                          ]
-
 # If your GAE app is at "myapp.appspot.com", then you can set up these creds at:
-# https://console.developers.google.com/project/apps~myapp/apiui/credential
+# https://console.cloud.google.com/apis/credentials?project=myapp
 # You need one each of service account (used for spreadsheets API calls), server
 # API key (used for geocoding API calls), and browser API key (used for maps
 # API calls).
-# If you get a service account key in P12 format, you'll need to convert it to
-# PEM format. I think the command is something like this:
-# $ openssl pkcs12 -in key.p12 -out key.pem -nodes -clcerts
-SERVICE_ACCOUNT_PEM_FILE_PATH = 'privatekey.pem'
-SERVICE_ACCOUNT_EMAIL = '1234-blah-abcd@developer.gserviceaccount.com'
+SERVICE_ACCOUNT_CREDS_JSON_FILE_PATH = 'myproject-abcd1234.json'
 GOOGLE_SERVER_API_KEY = 'abc123'
 GOOGLE_BROWSER_API_KEY = 'xyz789'
+
+# Instructions to obtain are here: https://developers.google.com/identity/sign-in/web/sign-in
+GOOGLE_SIGNIN_CLIENT_ID = 'abcd1234.apps.googleusercontent.com'
+
+# Generate a big random secret and put it here (maybe `openssl rand -hex 32`).
+FLASK_SECRET_KEY = 'some very large random secret'
 
 
 #
@@ -60,9 +61,11 @@ GOOGLE_BROWSER_API_KEY = 'xyz789'
 #
 
 # This is the URL that we'll send the user to so they can pay.
-# You get this URL when you use the Paypal web interface to create a payment
+# You get this URL when you use the PayPal web interface to create a payment
 # button. (We don't actually use the button <form>.)
 # NOTE: When testing, make sure this is www.sandbox.paypal.com!
+# NOTE: Hosted buttons don't seem to be what you get anymore when creating a button, so
+# this will have to change.
 PAYPAL_PAYMENT_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ABC123'
 PAYPAL_PAYMENT_URL += '&invoice=%s'
 # When testing, this will probably be "youremail-facilitator@gmail.com"
@@ -76,31 +79,43 @@ PAYPAL_TXN_item_name = 'DECA Membership - 1 year'
 #
 
 MAILCHIMP_ENABLED = True
+MAILCHIMP_DATACENTER = 'us2'
 MAILCHIMP_API_KEY = 'abc123'
 MAILCHIMP_MEMBERS_LIST_ID = 'abc123'
-MAILCHIMP_MEMBER_TYPE_MERGE_ID = 'MMBR_TYPE'
+MAILCHIMP_MEMBER_TYPE_MERGE_TAG = 'MMBR_TYPE'
 MAILCHIMP_MEMBER_TYPE_MEMBER = 'Member'
 MAILCHIMP_MEMBER_TYPE_VOLUNTEER = 'Volunteer'
 
 
 #
+# Sendgrid info
+#
+
+SENDGRID_API_KEY = 'SG.abcd1234'
+
+
+#
 # Spreadsheet keys
 #
-# Note: Figuring out the key for the first worksheet is a hassle (unlike the
-# spreadsheet key it's not shown in the URL). You can our
-# gapps._get_first_worksheet_id() function to help.
+# Note: Figuring out the key for the first worksheet is a hassle (unlike the spreadsheet
+# key it's not shown in the URL). You can use our first_sheet_titles.py utility to help.
 
-AUTHORIZED_SPREADSHEET_KEY = 'abc123'
-AUTHORIZED_WORKSHEET_KEY = 'od6'
+AUTHORIZED_SPREADSHEET_ID = 'abc123'
+MEMBERS_WORKSHEET_TITLE = 'Sheet1'
+MEMBERS_WORKSHEET_ID = 0
 
-VOLUNTEER_INTERESTS_SPREADSHEET_KEY = 'abc123'
-VOLUNTEER_INTERESTS_WORKSHEET_KEY = 'od6'
+VOLUNTEER_INTERESTS_SPREADSHEET_ID = 'abc123'
+VOLUNTEER_INTERESTS_SPREADSHEET_WORKSHEET_TITLE = 'Sheet1'
+VOLUNTEER_INTERESTS_SPREADSHEET_WORKSHEET_ID = 0
 
-SKILLS_CATEGORIES_SPREADSHEET_KEY = 'abc123'
-SKILLS_CATEGORIES_WORKSHEET_KEY = 'od6'
+SKILLS_CATEGORIES_SPREADSHEET_ID = 'abc123'
+SKILLS_CATEGORIES_SPREADSHEET_WORKSHEET_TITLE = 'Sheet1'
+SKILLS_CATEGORIES_SPREADSHEET_WORKSHEET_ID = 0
 
-MEMBERS_SPREADSHEET_KEY = 'abc123'
-MEMBERS_WORKSHEET_KEY = 'od6'
+MEMBERS_SPREADSHEET_ID = 'abc123'
+MEMBERS_SPREADSHEET_WORKSHEET_TITLE = 'Sheet1'
+MEMBERS_SPREADSHEET_WORKSHEET_ID = 0
 
-VOLUNTEERS_SPREADSHEET_KEY = 'abc123'
-VOLUNTEERS_WORKSHEET_KEY = 'od6'
+VOLUNTEERS_SPREADSHEET_ID = 'abc123'
+VOLUNTEERS_SPREADSHEET_WORKSHEET_TITLE = 'Sheet1'
+VOLUNTEERS_SPREADSHEET_WORKSHEET_ID = 0

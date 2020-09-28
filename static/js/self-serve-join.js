@@ -1,18 +1,10 @@
 /*
  * Copyright Adam Pritchard 2014
- * MIT License : http://adampritchard.mit-license.org/
+ * MIT License : https://adampritchard.mit-license.org/
  */
 
 $(function() {
   "use strict";
-
-  if (document.referrer) {
-    // After a successful member creation (with cheque payment) we want to move
-    // the user off the registration page. We'll send them to the root of the
-    // domain.
-    var doneURL = document.referrer.split('/').slice(0, 3).join('/');
-    $('#newMember .doneBtn').attr('href', doneURL);
-  }
 
   var inIframe = (window !== window.top);
 
@@ -31,13 +23,11 @@ $(function() {
                              '#newMember .waitModal',
                              $fakeSubmit);
 
-
   var submitClick = function(event) {
     event.preventDefault();
 
     // Alter the form and modal depending on payment method
-    // TODO: Don't hardcode field name
-    $('#newMember [name="payment_method"]').val($(this).val());
+    $('#newMember [name=' + DECA.PAYMENT_METHOD_NAME + ']').val($(this).val());
     if ($(this).val() === 'cheque') {
       $('#newMember .waitModal .show-paypal').addClass('hidden');
       $('#newMember .waitModal .show-cheque').removeClass('hidden');

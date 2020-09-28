@@ -1,6 +1,7 @@
 # Don't put our keys in source control!
 *.pem
 *.p12
+*.json
 
 # Also don't put our private config values in source control
 private.py
@@ -9,6 +10,9 @@ iframe-test-custom.html
 
 bower_components
 node_modules
+
+*.http
+*.rsls
 
 # Editor
 .vscode/

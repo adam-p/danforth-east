@@ -1,314 +1,335 @@
 # -*- coding: utf-8 -*-
 
 #
-# Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# Copyright Adam Pritchard 2020
+# MIT License : https://adampritchard.mit-license.org/
 #
 
-import os
+"""
+Flask routes used by tasks queues and cron jobs
+"""
+
 import logging
-
-import webapp2
-import jinja2
-
-from google.appengine.ext import ndb
+import flask
+from google.cloud import ndb
 
 import config
-import helpers
-import utils
 import gapps
+import emailer
+import main
 
 
-JINJA_ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__),
-                                                'templates')),
-    extensions=['jinja2.ext.autoescape'],
-    autoescape=True)
+tasks = flask.Blueprint('tasks', __name__)
+
+# These aren't routes submitted to by users, and there are checks to ensure that.
+main.csrf.exempt(tasks)
 
 
-class NewMemberMailWorker(helpers.BaseHandler):
 
-    def post(self):
-        logging.info('NewMemberMailWorker hit')
-        logging.info(self.request.params.items())
+@tasks.route('/tasks/new-member-mail', methods=['POST'])
+def new_member_mail():
+    """Queue task invoked when a member has been newly registered.
+    Sends appropriate welcome emails.
+    """
+    logging.info('tasks.new_member_mail hit')
 
-        #
-        # Send welcome email
-        #
+    member_dict = gapps.validate_queue_task(flask.request)
+    logging.info(member_dict)
 
-        member_name = '%s %s' % (self.request.POST[config.MEMBER_FIELDS.first_name.name],
-                                 self.request.POST[config.MEMBER_FIELDS.last_name.name])
-        member_email = self.request.POST[config.MEMBER_FIELDS.email.name]
+    #
+    # Send welcome email
+    #
 
-        with open('templates/tasks/email-new-member-subject.txt', 'r') as subject_file:
-            subject = subject_file.read().strip()
+    member_name = '%s %s' % (member_dict[config.SHEETS.member.fields.first_name.name],
+                                member_dict[config.SHEETS.member.fields.last_name.name])
+    member_email = member_dict[config.SHEETS.member.fields.email.name]
 
-        template_values = {
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('tasks/email-new-member.jinja')
-        body_html = template.render(template_values)
+    with open('templates/tasks/email-new-member-subject.txt', 'r') as subject_file:
+        subject = subject_file.read().strip()
 
-        gapps.send_email(member_email,
-                         member_name,
-                         subject,
-                         body_html)
+    body_html = flask.render_template(
+        'tasks/email-new-member.jinja',
+        app_config=config)
 
-        #
-        # Send email to volunteer-interest-area reps
-        #
+    if not emailer.send((member_email, member_name), subject, body_html, None):
+        # Log and carry on
+        logging.error(f'failed to send new-member email to {member_email}')
+    else:
+        logging.info(f'sent new-member email to {member_email}')
 
-        interest_reps = gapps.get_volunteer_interest_reps_for_member(self.request.POST)
+    #
+    # Send email to volunteer-interest-area reps
+    #
 
-        if interest_reps:
-            template = JINJA_ENVIRONMENT.get_template('tasks/email-volunteer-interest-rep-subject.jinja')
-            subject = template.render({'join_type': 'member'})
-            subject = subject.strip()
+    interest_reps = gapps.get_volunteer_interest_reps_for_member(member_dict)
 
-            for interest, reps in interest_reps.items():
-                template_values = {
-                    'interest': interest,
-                    'member_name': member_name,
-                    'member_email': member_email,
-                    'join_type': 'member',
-                    'config': config,
-                }
-                template = JINJA_ENVIRONMENT.get_template('tasks/email-volunteer-interest-rep.jinja')
-                body_html = template.render(template_values)
+    if interest_reps:
+        subject = flask.render_template(
+            'tasks/email-volunteer-interest-rep-subject.jinja',
+            app_config=config,
+            join_type='member').strip()
 
-                for rep in reps:
-                    gapps.send_email(rep.get(config.VOLUNTEER_INTEREST_FIELDS.email.name),
-                                     rep.get(config.VOLUNTEER_INTEREST_FIELDS.name.name),
-                                     subject,
-                                     body_html)
+        for interest, reps in interest_reps.items():
+            body_html = flask.render_template(
+                'tasks/email-volunteer-interest-rep.jinja',
+                app_config=config,
+                join_type='member',
+                interest=interest,
+                member_name=member_name,
+                member_email=member_email)
 
+            for rep in reps:
+                rep_email = rep.get(config.SHEETS.volunteer_interest.fields.email.name)
+                rep_name = rep.get(config.SHEETS.volunteer_interest.fields.name.name)
+                ok = emailer.send(
+                        (rep_email, rep_name),
+                        subject,
+                        body_html, None)
+                if not ok:
+                    logging.error(f'failed to send new-member-volunteer-interest email to {rep_email}')
+                else:
+                    logging.info(f'sent new-member-volunteer-interest email to {rep_email}')
 
-class RenewMemberMailWorker(helpers.BaseHandler):
-
-    def post(self):
-        logging.info('RenewMemberMailWorker hit')
-        logging.info(self.request.params.items())
-
-        #
-        # Send welcome email
-        #
-
-        member_name = '%s %s' % (self.request.POST[config.MEMBER_FIELDS.first_name.name],
-                                 self.request.POST[config.MEMBER_FIELDS.last_name.name])
-        member_email = self.request.POST[config.MEMBER_FIELDS.email.name]
-
-        with open('templates/tasks/email-renew-member-subject.txt', 'r') as subject_file:
-            subject = subject_file.read().strip()
-
-        template_values = {
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('tasks/email-renew-member.jinja')
-        body_html = template.render(template_values)
-
-        gapps.send_email(member_email,
-                         member_name,
-                         subject,
-                         body_html)
+    return flask.make_response('', 200)
 
 
-class NewVolunteerMailWorker(helpers.BaseHandler):
+@tasks.route('/tasks/renew-member-mail', methods=['POST'])
+def renew_member_mail():
+    """Queue task invoked when a member has been renewed.
+    Sends appropriate welcome emails.
+    """
+    logging.info('tasks.renew_member_mail hit')
 
-    def post(self):
-        logging.info('NewVolunteerMailWorker hit')
-        logging.info(self.request.params.items())
+    member_dict = gapps.validate_queue_task(flask.request)
+    logging.info(member_dict)
 
-        #
-        # Send welcome email
-        #
+    #
+    # Send welcome email
+    #
 
-        member_name = '%s %s' % (self.request.POST[config.VOLUNTEER_FIELDS.first_name.name],
-                                 self.request.POST[config.VOLUNTEER_FIELDS.last_name.name])
-        member_email = self.request.POST[config.VOLUNTEER_FIELDS.email.name]
+    member_name = '%s %s' % (member_dict[config.SHEETS.member.fields.first_name.name],
+                                member_dict[config.SHEETS.member.fields.last_name.name])
+    member_email = member_dict[config.SHEETS.member.fields.email.name]
 
-        with open('templates/tasks/email-new-volunteer-subject.txt', 'r') as subject_file:
-            subject = subject_file.read().strip()
+    with open('templates/tasks/email-renew-member-subject.txt', 'r') as subject_file:
+        subject = subject_file.read().strip()
 
-        template_values = {
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('tasks/email-new-volunteer.jinja')
-        body_html = template.render(template_values)
+    body_html = flask.render_template(
+        'tasks/email-renew-member.jinja',
+        app_config=config)
 
-        gapps.send_email(member_email,
-                         member_name,
-                         subject,
-                         body_html)
+    if not emailer.send((member_email, member_name), subject, body_html, None):
+        # Log and carry on
+        # TODO: Should we instead return non-200 and let the task retry?
+        logging.error(f'failed to send renew-member email to {member_email}')
+    else:
+        logging.info(f'sent renew-member email to {member_email}')
 
-        #
-        # Send email to volunteer-interest-area reps
-        #
+    return flask.make_response('', 200)
 
-        interest_reps = gapps.get_volunteer_interest_reps_for_member(self.request.POST)
 
-        if interest_reps:
-            template = JINJA_ENVIRONMENT.get_template('tasks/email-volunteer-interest-rep-subject.jinja')
-            subject = template.render({'join_type': 'volunteer'})
-            subject = subject.strip()
+@tasks.route('/tasks/new-volunteer-mail', methods=['POST'])
+def new_volunteer_mail():
+    """Queue task invoked when a new volunteer has been added.
+    Sends appropriate welcome emails.
+    """
 
-            for interest, reps in interest_reps.items():
-                template_values = {
-                    'interest': interest,
-                    'member_name': member_name,
-                    'member_email': member_email,
-                    'join_type': 'volunteer',
-                    'config': config,
-                }
-                template = JINJA_ENVIRONMENT.get_template('tasks/email-volunteer-interest-rep.jinja')
-                body_html = template.render(template_values)
+    logging.info('tasks.new_volunteer_mail hit')
 
-                for rep in reps:
-                    gapps.send_email(rep.get(config.VOLUNTEER_INTEREST_FIELDS.email.name),
-                                     rep.get(config.VOLUNTEER_INTEREST_FIELDS.name.name),
-                                     subject,
-                                     body_html)
+    volunteer_dict = gapps.validate_queue_task(flask.request)
+    logging.info(volunteer_dict)
+
+    #
+    # Send welcome email
+    #
+
+    volunteer_name = '%s %s' % (volunteer_dict[config.SHEETS.volunteer.fields.first_name.name],
+                                volunteer_dict[config.SHEETS.volunteer.fields.last_name.name])
+    volunteer_email = volunteer_dict[config.SHEETS.volunteer.fields.email.name]
+
+    with open('templates/tasks/email-new-volunteer-subject.txt', 'r') as subject_file:
+        subject = subject_file.read().strip()
+
+    body_html = flask.render_template(
+        'tasks/email-new-volunteer.jinja',
+        app_config=config)
+
+    if not emailer.send((volunteer_email, volunteer_name), subject, body_html, None):
+        # Log and carry on
+        # TODO: Should we instead return non-200 and let the task retry?
+        logging.error(f'failed to send new-volunteer email to {volunteer_email}')
+    else:
+        logging.info(f'sent new-volunteer email to {volunteer_email}')
+
+    #
+    # Send email to volunteer-interest-area reps
+    #
+
+    interest_reps = gapps.get_volunteer_interest_reps_for_member(volunteer_dict)
+
+    if interest_reps:
+        subject = flask.render_template(
+            'tasks/email-volunteer-interest-rep-subject.jinja',
+            app_config=config,
+            join_type='volunteer').strip()
+
+        for interest, reps in interest_reps.items():
+            body_html = flask.render_template(
+                'tasks/email-volunteer-interest-rep.jinja',
+                app_config=config,
+                join_type='volunteer',
+                interest=interest,
+                member_name=volunteer_name,
+                member_email=volunteer_email)
+
+            for rep in reps:
+                rep_email = rep.get(config.SHEETS.volunteer_interest.fields.email.name)
+                rep_name = rep.get(config.SHEETS.volunteer_interest.fields.name.name)
+                ok = emailer.send(
+                        (rep_email, rep_name),
+                        subject, body_html, None)
+                if not ok:
+                    logging.error(f'failed to send new-volunteer-volunteer-interest email to {rep_email}')
+                else:
+                    logging.info(f'sent new-volunteer-volunteer-interest email to {rep_email}')
+
+    return flask.make_response('', 200)
+
+
+@tasks.route('/tasks/member-sheet-cull', methods=['GET', 'POST'])
+def member_sheet_cull():
+    """Remove members from the members sheet who have not renewed in a long time.
+    This gets called both as a cron job and a task queue job.
+    """
+    if flask.request.method == 'GET':
+        # cron job
+        logging.debug('tasks.member_sheet_cull hit from cron')
+        gapps.validate_cron_task(flask.request)
+    else:
+        # task queue job
+        logging.debug('tasks.member_sheet_cull hit from task queue')
+        gapps.validate_queue_task(flask.request)
+
+    gapps.cull_members_sheet()
+
+    return flask.make_response('', 200)
 
 
 class Settings(ndb.Model):
     """Used to store app state and settings.
     """
-
     SINGLETON_DATASTORE_KEY = 'SINGLETON'
 
-    @classmethod
-    def singleton(cls):
-        return cls.get_or_insert(cls.SINGLETON_DATASTORE_KEY)
+    _ndb_client = ndb.Client()
 
     member_sheet_year = ndb.IntegerProperty(
-        default=2014,
+        default=2019,
         verbose_name='The current year of operation. When the calendar year changes, work needs to be done and this gets updated.',
         indexed=False)
 
+    @classmethod
+    def singleton(cls):
+        with cls._ndb_client.context():
+            return cls.get_or_insert(cls.SINGLETON_DATASTORE_KEY)
 
-class MemberSheetCullWorker(helpers.BaseHandler):
-    """Remove defunct members from the members sheet.
+    def update(self):
+        with self._ndb_client.context():
+            self.put()
+
+
+@tasks.route('/tasks/member-sheet-archive', methods=['GET'])
+def member_sheet_archive():
+    """Cron task that creates an archive of the members sheet once per year.
     """
+    logging.warning('tasks.member_sheet_archive: hit')
+    gapps.validate_cron_task(flask.request)
 
-    def get(self):
-        """This will get hit by cron triggers.
-        """
-        logging.debug('MemberSheetCullWorker.get hit')
-        gapps.cull_members_sheet()
+    settings = Settings.singleton()
+    logging.debug('tasks.member_sheet_archive: settings.member_sheet_year: %d', settings.member_sheet_year)
 
-    def post(self):
-        """This will get hit by taskqueue calls.
-        """
-        logging.debug('MemberSheetCullWorker.post hit')
-        gapps.cull_members_sheet()
+    new_year = gapps.archive_members_sheet(settings.member_sheet_year)
+    if new_year:
+        logging.debug('tasks.member_sheet_archive: archived; setting new year: %d', new_year)
+        settings.member_sheet_year = new_year
+        settings.update()
 
-
-class MemberSheetArchiveWorker(helpers.BaseHandler):
-    """Every year we make an archival copy of the current members spreadsheet.
-    """
-
-    def get(self):
-        logging.debug('MemberSheetArchiveWorker hit')
-
-        settings = Settings.singleton()
-        logging.debug(settings)
-
-        new_year = gapps.archive_members_sheet(settings.member_sheet_year)
-        if new_year:
-            settings.member_sheet_year = new_year
-            settings.put()
+    return flask.make_response('', 200)
 
 
-class RenewalReminderEmailsWorker(helpers.BaseHandler):
+@tasks.route('/tasks/renewal-reminder-emails', methods=['GET'])
+def renewal_reminder_emails():
     """Sends renewal reminder emails to members who are nearing their renewal
     date.
     """
+    logging.debug('tasks.renewal_reminder_emails: hit')
+    gapps.validate_cron_task(flask.request)
 
-    def get(self):
-        logging.debug('RenewalReminderEmailsWorker hit')
+    expiring_rows = gapps.get_members_expiring_soon()
+    if not expiring_rows:
+        logging.debug('tasks.renewal_reminder_emails: no expiring members')
+        return flask.make_response('', 200)
 
-        expiring_entries = gapps.get_members_expiring_soon()
-        if not expiring_entries:
-            logging.debug('no expiring members')
-            return
+    logging.debug('tasks.renewal_reminder_emails: found %d expiring members', len(expiring_rows))
 
-        logging.debug([x.to_dict() for x in expiring_entries])
+    with open('templates/tasks/email-renewal-reminder-subject.txt', 'r') as subject_file:
+        subject_noauto = subject_file.read().strip()
 
-        template_values = {
-            'config': config,
-        }
+    with open('templates/tasks/email-renewal-reminder-auto-subject.txt', 'r') as subject_file:
+        subject_auto = subject_file.read().strip()
 
-        with open('templates/tasks/email-renewal-reminder-subject.txt', 'r') as subject_file:
-            subject_noauto = subject_file.read().strip()
-        template_noauto = JINJA_ENVIRONMENT.get_template('tasks/email-renewal-reminder.jinja')
+    for row in expiring_rows:
+        member_first_name = row.dict.get(config.SHEETS.member.fields.first_name.name)
+        member_name = '%s %s' % (member_first_name,
+                                 row.dict.get(config.SHEETS.member.fields.last_name.name))
+        member_email = row.dict.get(config.SHEETS.member.fields.email.name)
 
-        with open('templates/tasks/email-renewal-reminder-auto-subject.txt', 'r') as subject_file:
-            subject_auto = subject_file.read().strip()
-        template_auto = JINJA_ENVIRONMENT.get_template('tasks/email-renewal-reminder-auto.jinja')
+        # Right now we use a Paypal button that does one-time purchases;
+        # that is, members pay for a year and then need to manually pay
+        # again the next year. But previously we used a "subscription"
+        # Paypal button, so there are still some members who automatically
+        # pay each year. These two groups will get different reminder
+        # emails.
+        auto_renewing = str(row.dict.get(config.SHEETS.member.fields.paypal_auto_renewing.name))
+        if auto_renewing.lower().startswith('y'):
+            # Member is auto-renewing (i.e., is a Paypal "subscriber")
+            subject = subject_auto
+            body_html = flask.render_template(
+                'tasks/email-renewal-reminder-auto.jinja',
+                app_config=config,
+                member_first_name=row.dict.get(config.SHEETS.member.fields.first_name.name))
+            logging.info('tasks.renewal_reminder_emails: sending auto-renewing reminder to %s', member_email)
 
-        for entry in expiring_entries:
-            entry_dict = entry.to_dict()
+        else:
+            # Member is year-to-year
+            subject = subject_noauto
+            body_html = flask.render_template(
+                'tasks/email-renewal-reminder.jinja',
+                app_config=config,
+                member_first_name=row.dict.get(config.SHEETS.member.fields.first_name.name))
+            logging.info('tasks.renewal_reminder_emails: sending non-auto-renewing reminder to %s', member_email)
 
-            template_values['member_first_name'] = entry_dict.get(config.MEMBER_FIELDS.first_name.name)
-            body_html_noauto = template_noauto.render(template_values)
-            body_html_auto = template_auto.render(template_values)
+        emailer.send((member_email, member_name),
+                     subject, body_html, None)
 
-            member_name = '%s %s' % (entry_dict.get(config.MEMBER_FIELDS.first_name.name),
-                                     entry_dict.get(config.MEMBER_FIELDS.last_name.name))
-            member_email = entry_dict.get(config.MEMBER_FIELDS.email.name)
-
-            # Right now we use a Paypal button that does one-time purchases;
-            # that is, members pay for a year and then need to manually pay
-            # again the next year. But previously we used a "subscription"
-            # Paypal button, so there are still some members who automatically
-            # pay each year. These two groups will get different reminder
-            # emails.
-            auto_renewing = str(entry_dict.get(config.MEMBER_FIELDS.paypal_auto_renewing.name))
-            if auto_renewing.lower().startswith('y'):
-                # Member is auto-renewing (i.e., is a Paypal "subscriber")
-                gapps.send_email(member_email,
-                                 member_name,
-                                 subject_auto,
-                                 body_html_auto)
-            else:
-                # Member is year-to-year
-                gapps.send_email(member_email,
-                                 member_name,
-                                 subject_noauto,
-                                 body_html_noauto)
+    return flask.make_response('', 200)
 
 
-class MailChimpUpdater(helpers.BaseHandler):
+@tasks.route('/tasks/process-mailchimp-updates', methods=['GET', 'POST'])
+def process_mailchimp_updates():
     """Updates MailChimp with changed members and volunteers.
+    This gets called both as a cron job and a task queue job.
     """
+    if flask.request.method == 'GET':
+        # cron job
+        logging.debug('tasks.process_mailchimp_updates: hit from cron')
+        gapps.validate_cron_task(flask.request)
+    else:
+        # task queue job
+        logging.debug('tasks.process_mailchimp_updates: hit from task queue')
+        gapps.validate_queue_task(flask.request)
 
-    def get(self):
-        """This will get hit by cron triggers.
-        """
-        logging.debug('MailChimpUpdater.get hit')
+    if not config.MAILCHIMP_ENABLED:
+        return flask.make_response('', 200)
 
-        if not config.MAILCHIMP_ENABLED:
-            return
-
-        gapps.process_mailchimp_updates()
-
-    def post(self):
-        """This will get hit by taskqueue calls.
-        """
-        logging.debug('MailChimpUpdater.post hit')
-
-        if not config.MAILCHIMP_ENABLED:
-            return
-
-        gapps.process_mailchimp_updates()
-
-
-app = webapp2.WSGIApplication([  # pylint: disable=C0103
-    ('/tasks/new-member-mail', NewMemberMailWorker),
-    ('/tasks/renew-member-mail', RenewMemberMailWorker),
-    ('/tasks/new-volunteer-mail', NewVolunteerMailWorker),
-    ('/tasks/member-sheet-cull', MemberSheetCullWorker),
-    ('/tasks/member-sheet-archive', MemberSheetArchiveWorker),
-    ('/tasks/renewal-reminder-emails', RenewalReminderEmailsWorker),
-    ('/tasks/process-mailchimp-updates', MailChimpUpdater),
-], debug=config.DEBUG)
-
+    gapps.process_mailchimp_updates()
+    return flask.make_response('', 200)

@@ -2,34 +2,46 @@
 
 #
 # Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# MIT License : https://adampritchard.mit-license.org/
 #
 
+from typing import NamedTuple
 from collections import namedtuple
 import logging
 import types
+import os
 
 import utils
 
-from private import *
+from .private import *
 
 
+# DO NOT forget to set this to False when deploying for real.
+# When it is True, some security checks are skipped.
 DEBUG = False
 
-if not DEBUG:
-    ALLOWED_EMAIL_TO_ADDRESSES = None
+# Set to true if you want to set up a public demo.
+# It prevents auth checks and doesn't send email.
+DEMO = False
 
-SCOPE = ['https://spreadsheets.google.com/feeds/',
-         'https://www.googleapis.com/auth/drive']
+#
+# Project config and environment
+#
+
+PROJECT_NAME = os.getenv('GOOGLE_CLOUD_PROJECT')
+# You can find this out for you project by using `gcloud app describe` and looking here:
+# https://cloud.google.com/compute/docs/regions-zones#locations
+PROJECT_REGION = 'us-central1'
+
+# This needs to have been created with `gcloud tasks queue create {name}`.
+# (AFAIK, the name isn't important, so you don't actually need to change it.)
+TASK_QUEUE_NAME = 'mmbrmgmt-task-queue'
 
 TIMEZONE = 'America/Toronto'
 
 # This is repeated in static/js/common.js
-# TODO: Get rid of this duplication. Maybe run our JS files through jinja
-# (once -- not on every request).
+# TODO: Get rid of this duplication. Maybe run our JS files through jinja (once -- not on every request).
 MULTIVALUE_DIVIDER = '; '
-
-APP_STATE_NDB_ENTITY_GROUP = 'AppState'
 
 
 #
@@ -40,8 +52,8 @@ PAYPAL_ACTOR_NAME = 'PAYPAL'
 
 # This is where we send the counter-request to validate IPN notifications.
 # NOTE: When testing, make sure this is www.sandbox.paypal.com!
-#PAYPAL_IPN_VALIDATION_URL = 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
-PAYPAL_IPN_VALIDATION_URL = 'https://ipnpb.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
+#PAYPAL_IPN_VALIDATION_URL = 'https://ipnpb.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
+PAYPAL_IPN_VALIDATION_URL = 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr?cmd=_notify-validate&%s'
 
 
 #
@@ -50,7 +62,7 @@ PAYPAL_IPN_VALIDATION_URL = 'https://ipnpb.paypal.com/cgi-bin/webscr?cmd=_notify
 
 # Once a year the members spreadsheet gets copied into an "archive" document,
 # for historical reference. This is the day on which that happens.
-# Hint: Don't pick a leap year day.
+# Tip: Don't pick a leap year day.
 MEMBER_SHEET_ARCHIVE_MONTH = 11
 MEMBER_SHEET_ARCHIVE_DAY = 1
 
@@ -61,15 +73,16 @@ MEMBER_SHEET_ARCHIVE_DAY = 1
 
 class Field(object):
     def __init__(self,
-                 title,
+                 name,
                  required=False,
+                 is_id=False,
                  validator=utils.basic_validator,
                  form_field=True,
                  mutable=True,
                  values=None,
                  mailchimp_merge_tag=None):
-        self.title = title
-        self.name = utils.title_to_name(title)
+        self.name = name
+        self.is_id = is_id
         self.required = required
         self.validator = validator
         self.form_field = form_field
@@ -86,53 +99,75 @@ class Field(object):
         return res
 
 
-# TODO: Probably better use classes than namedtuple for these sets of fields
-AUTHORIZED_FIELDS = namedtuple('AUTHORIZED_FIELDS',
-                               ['id',
+class Spreadsheet(object):
+    def __init__(self,
+                 spreadsheet_id: str,
+                 worksheet_title: str,
+                 worksheet_id: int,
+                 fields: NamedTuple):
+        self.spreadsheet_id = spreadsheet_id
+        self.worksheet_title = worksheet_title
+        self.worksheet_id = worksheet_id
+        self.fields = fields
+
+    def id_field(self):
+        f = [f for f in self.fields if f.is_id]
+        if not f:
+            raise Exception('Spreadsheet has no ID field')
+        return f[0]
+
+
+AUTHORIZED_SHEET = Spreadsheet(AUTHORIZED_SPREADSHEET_ID,
+                               AUTHORIZED_WORKSHEET_TITLE,
+                               AUTHORIZED_WORKSHEET_ID,
+                               namedtuple('AUTHORIZED_FIELDS', [
+                                'id',
                                 'created',
                                 'created_by',
                                 'email',
                                 'name'])(
-    Field('ID', validator=lambda *args: True, form_field=False, mutable=False),
+    Field('ID', is_id=True, validator=lambda *args: True, form_field=False, mutable=False),
     Field('Created', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Created By', validator=lambda *args: True, form_field=False, mutable=False),
-    Field('Email', True, utils.email_validator),
-    Field('Name', True)
-)
+    Field('Email', required=True, validator=utils.email_validator),
+    Field('Name', required=True)
+))
 
-
-MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
-                           ['id',
-                            'joined',
-                            'joined_by',
-                            'renewed',
-                            'renewed_by',
-                            'paid',
-                            'first_name',
-                            'last_name',
-                            'email',
-                            'phone_num',
-                            'apt_num',
-                            'street_num',
-                            'street_name',
-                            'city',
-                            'postal_code',
-                            'address_latlong',
-                            'family_names',
-                            'join_location',
-                            'volunteer_interests',
-                            'skills',
-                            'joined_latlong',
-                            'joined_address',
-                            'renewed_latlong',
-                            'renewed_address',
-                            'paypal_name',
-                            'paypal_email',
-                            'paypal_payer_id',
-                            'paypal_auto_renewing',
-                            'mailchimp_updated',
+MEMBER_SHEET = Spreadsheet(MEMBERS_SPREADSHEET_ID,
+                           MEMBERS_WORKSHEET_TITLE,
+                           MEMBERS_WORKSHEET_ID,
+                           namedtuple('MEMBER_FIELDS', [
+                                'id',
+                                'joined',
+                                'joined_by',
+                                'renewed',
+                                'renewed_by',
+                                'paid',
+                                'first_name',
+                                'last_name',
+                                'email',
+                                'phone_num',
+                                'apt_num',
+                                'street_num',
+                                'street_name',
+                                'city',
+                                'postal_code',
+                                'address_latlong',
+                                'family_names',
+                                'join_location',
+                                'volunteer_interests',
+                                'skills',
+                                'joined_latlong',
+                                'joined_address',
+                                'renewed_latlong',
+                                'renewed_address',
+                                'paypal_name',
+                                'paypal_email',
+                                'paypal_payer_id',
+                                'paypal_auto_renewing',
+                                'mailchimp_updated',
                             ])(
-    Field('ID', validator=lambda *args: True, form_field=True, mutable=False),
+    Field('ID', is_id=True, validator=lambda *args: True, form_field=True, mutable=False),
     Field('Joined', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Joined By', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Renewed', validator=lambda *args: True, form_field=False),
@@ -161,31 +196,34 @@ MEMBER_FIELDS = namedtuple('MEMBER_FIELDS',
     Field('Paypal Payer ID', form_field=False),
     Field('Paypal Auto-Renewing', form_field=False),
     Field('MailChimp Updated', form_field=False),
-)
+))
 
 
-VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
-                              ['id',
-                               'joined',
-                               'joined_by',
-                               'first_name',
-                               'last_name',
-                               'email',
-                               'phone_num',
-                               'apt_num',
-                               'street_num',
-                               'street_name',
-                               'city',
-                               'postal_code',
-                               'address_latlong',
-                               'join_location',
-                               'volunteer_interests',
-                               'skills',
-                               'joined_latlong',
-                               'joined_address',
+VOLUNTEER_SHEET = Spreadsheet(VOLUNTEERS_SPREADSHEET_ID,
+                              VOLUNTEERS_WORKSHEET_TITLE,
+                              VOLUNTEERS_WORKSHEET_ID,
+                               namedtuple('VOLUNTEER_FIELDS', [
+                                'id',
+                                'joined',
+                                'joined_by',
+                                'first_name',
+                                'last_name',
+                                'email',
+                                'phone_num',
+                                'apt_num',
+                                'street_num',
+                                'street_name',
+                                'city',
+                                'postal_code',
+                                'address_latlong',
+                                'join_location',
+                                'volunteer_interests',
+                                'skills',
+                                'joined_latlong',
+                                'joined_address',
                                 'mailchimp_updated',
                                ])(
-    Field('ID', validator=lambda *args: True, form_field=True, mutable=False),
+    Field('ID', is_id=True, validator=lambda *args: True, form_field=True, mutable=False),
     Field('Joined', validator=lambda *args: True, form_field=False, mutable=False),
     Field('Joined By', validator=lambda *args: True, form_field=False, mutable=False),
     Field('First Name', required=True, mailchimp_merge_tag='FNAME'),
@@ -204,43 +242,51 @@ VOLUNTEER_FIELDS = namedtuple('VOLUNTEER_FIELDS',
     Field('Joined LatLong', form_field=False),
     Field('Joined Address', form_field=False),
     Field('MailChimp Updated', form_field=False),
-)
+))
 
 
-VOLUNTEER_INTEREST_FIELDS = namedtuple('VOLUNTEER_INTEREST_FIELDS',
-                               ['interest',
-                                'email',
-                                'name'])(
+VOLUNTEER_INTERESTS_SHEET = Spreadsheet(VOLUNTEER_INTERESTS_SPREADSHEET_ID,
+                                        VOLUNTEER_INTERESTS_WORKSHEET_TITLE,
+                                        VOLUNTEER_INTERESTS_WORKSHEET_ID,
+                                        namedtuple('VOLUNTEER_INTERESTS_FIELDS', [
+                                            'interest',
+                                            'email',
+                                            'name'])(
     Field('Interest', required=True),
     Field('Email', validator=utils.email_validator),
     Field('Name'),
-)
+))
 
 
-SKILLS_CATEGORY_FIELDS = namedtuple('SKILLS_CATEGORY_FIELDS',
-                               ['category'])(
+SKILLS_CATEGORIES_SHEET = Spreadsheet(SKILLS_CATEGORIES_SPREADSHEET_ID,
+                                      SKILLS_CATEGORIES_WORKSHEET_TITLE,
+                                      SKILLS_CATEGORIES_WORKSHEET_ID,
+                                      namedtuple('SKILLS_CATEGORIES_FIELDS', [
+                                        'category'])(
     Field('Category', required=True),
-)
+))
 
 
-FIELDS = namedtuple('FIELDS', ['authorized', 'member',
+SHEETS = namedtuple('SHEETS', ['authorized', 'member',
                                'volunteer_interest', 'volunteer',
                                'skills_category'])(
-    AUTHORIZED_FIELDS, MEMBER_FIELDS,
-    VOLUNTEER_INTEREST_FIELDS, VOLUNTEER_FIELDS,
-    SKILLS_CATEGORY_FIELDS
+    AUTHORIZED_SHEET, MEMBER_SHEET,
+    VOLUNTEER_INTERESTS_SHEET, VOLUNTEER_SHEET,
+    SKILLS_CATEGORIES_SHEET
 )
 
 
-def validate_obj_against_fields(obj, fields):
-    """Validates the member data in member. Returns a dict with the proper
-    fields on success, or False on failure.
+def validate_obj_against_fields(obj: dict, fields: NamedTuple) -> dict:
+    """Validates the object, possibly with partial fields, against the field data.
+    Returns a dict with the proper fields on success, or False on failure.
     """
-
     result = {}
 
     for field in fields._asdict().values():
-        result[field.name] = obj.get(field.name, '')
+        # It's important to default to None here. When we update a row in the spreadsheet,
+        # None (null) is interpreted as "leave the existing value". If we defaulted to '',
+        # the value in the sheet would be replaced.
+        result[field.name] = obj.get(field.name, None)
 
         if not field.validator(result[field.name], field.required):
             logging.warn('Bad input: %s : %s' % (field.name, result[field.name]))
@@ -249,15 +295,21 @@ def validate_obj_against_fields(obj, fields):
     return result
 
 
-def validate_member(member):
-    return validate_obj_against_fields(member, MEMBER_FIELDS)
+def validate_member(member: dict) -> dict:
+    """Validates the given member dict, possibly with partial fields.
+    Returns a dict with the proper fields on success, or False on failure.
+    """
+    return validate_obj_against_fields(member, SHEETS.member.fields)
 
 
-def validate_volunteer(member):
-    return validate_obj_against_fields(member, VOLUNTEER_FIELDS)
+def validate_volunteer(member: dict) -> dict:
+    """Validates the given volunteer dict, possibly with partial fields.
+    Returns a dict with the proper fields on success, or False on failure.
+    """
+    return validate_obj_against_fields(member, SHEETS.volunteer.fields)
 
 
-def fields_to_dict(fields):
+def fields_to_dict(fields: NamedTuple) -> dict:
     """Returns partial fields information (suitable for JSON encoding).
     """
 

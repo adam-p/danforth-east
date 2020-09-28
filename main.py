@@ -1,250 +1,81 @@
 # -*- coding: utf-8 -*-
 
 #
-# Copyright Adam Pritchard 2014
-# MIT License : http://adampritchard.mit-license.org/
+# Copyright Adam Pritchard 2020
+# MIT License : https://adampritchard.mit-license.org/
 #
 
-# pylint: disable=E1101,E1103
+"""
+App entry and Flask routes blueprints gathering.
+"""
 
 import logging
-import os
-from urlparse import urlparse
-
-import webapp2
-import webapp2_extras.json
-import jinja2
-from Crypto.Random import random
-
-from google.appengine.api import users
-from google.appengine.ext.webapp.util import login_required
-from google.appengine.api import taskqueue
+from urllib.parse import urlparse
+import flask
+from flask_wtf.csrf import CSRFProtect, same_origin
 
 import config
-import helpers
-import utils
-import gapps
+import emailer
 
 
-JINJA_ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__),
-                                                'templates')),
-    extensions=['jinja2.ext.autoescape'],
-    autoescape=True)
+app = flask.Flask(__name__)
+app.secret_key = config.FLASK_SECRET_KEY
+logging.basicConfig(level=logging.DEBUG)
+if config.DEBUG:
+    app.debug = True
+else:
+    app.debug = False
 
 
-class IndexPage(helpers.BaseHandler):
+# Add token-based CSRF protection
+csrf = CSRFProtect(app)
 
-    def get(self):
-        user = users.get_current_user()
+def additional_csrf_checks():
+    """OWASP suggests a defense-in-depth approach to CSRF mitigation.
+    https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+    We get the token-base approach from flask_wtf.csrf. Here we're going to some additional checks.
+    Calls flask.abort(400) if it doesn't match. Called before every request in this project.
 
-        template_values = {
-            'user': user,
-            'logout_url': users.create_logout_url('/'),
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('index.jinja')
-        self.response.write(template.render(template_values))
+    To be used by blueprints like:
+        blueprint_name.before_request(main.additional_csrf_checks)
 
+    If you are running the server behind a proxy, these checks might not work. See:
+    https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#identifying-the-target-origin
+    """
+    if config.DEBUG:
+        logging.warning('app.additional_csrf_checks: skipping check due to DEBUG=True')
+        return
 
-class NewMemberPage(helpers.BaseHandler):
+    if flask.request.method == 'POST':
+        # "Use of Custom Request Headers"
+        # https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-of-custom-request-headers
+        if flask.request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+            logging.warning('app.additional_csrf_checks: custom header check failed: %s %s', list(flask.request.headers.items()), list(flask.request.values.items()))
+            flask.abort(400, description='CSRF: custom header check failed')
 
-    @login_required
-    def get(self):
-        user = users.get_current_user()
-        if not user:
-            self.redirect(users.create_login_url(self.request.uri))
-            return
-        elif not gapps.is_user_authorized(user):
-            self.redirect('/bad-user')
-            return
+        # "Verifying Origin With Standard Headers"
+        # https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-origin-with-standard-headers
+        req_target = flask.request.url
 
-        csrf_token = helpers.get_csrf_token(self.request)
+        req_initiator = flask.request.origin or flask.request.referrer
+        if not req_initiator:
+            logging.warning('app.additional_csrf_checks: got empty req_initiator: %s %s', list(flask.request.headers.items()), list(flask.request.values.items()))
+            flask.abort(400, description='CSRF: missing Origin and Referer headers')
 
-        volunteer_interests = gapps.get_volunteer_interests()
-        skills_categories = gapps.get_skills_categories()
-
-        template_values = {
-            'FIELDS': config.FIELDS,
-            'csrf_token': csrf_token,
-            'volunteer_interests': volunteer_interests,
-            'skills_categories': skills_categories,
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('new-member.jinja')
-
-        helpers.set_csrf_cookie(self.response, csrf_token)
-        self.response.write(template.render(template_values))
-
-    def post(self):
-        """Create the new member.
-        '409 Conflict' is thrown if the email address is already associated
-        with an existing member.
-        """
-        helpers.check_csrf(self.request)
-
-        user = users.get_current_user()
-        if not user or not gapps.is_user_authorized(user):
-            detail = 'user not authorized' if user else 'user not logged in'
-            webapp2.abort(401, detail=detail)
-
-        new_member = gapps.member_dict_from_request(self.request,
-                                                    'useremail@example.com', # DEMO: user.email(),
-                                                    'join')
-        join_or_renew = gapps.join_or_renew_member_from_dict(new_member)
-
-        self.response.write('success: %s' % join_or_renew)
-
-        # Queue the welcome email
-        #taskqueue.add(url='/tasks/new-member-mail', params=new_member) # DEMO: disable emails
+        if not same_origin(req_target, req_initiator):
+            logging.warning('app.additional_csrf_checks: req_target_origin != req_initiator_origin: %s %s %s %s', req_target, req_initiator, list(flask.request.headers.items()), list(flask.request.values.items()))
+            flask.abort(400, description='CSRF: request initiator and target origin mismatch')
 
 
-class RenewMemberPage(helpers.BaseHandler):
+from auth import auth as auth_blueprint
+app.register_blueprint(auth_blueprint)
 
-    @login_required
-    def get(self):
-        user = users.get_current_user()
-        if not user:
-            self.redirect(users.create_login_url(self.request.uri))
-            return
-        elif not gapps.is_user_authorized(user):
-            self.redirect('/bad-user')
-            return
+from admin_site import admin as admin_blueprint
+app.register_blueprint(admin_blueprint)
 
-        csrf_token = helpers.get_csrf_token(self.request)
+from self_serve import self_serve as self_serve_blueprint, self_serve_tasks as self_serve_tasks_blueprint
+app.register_blueprint(self_serve_blueprint)
+app.register_blueprint(self_serve_tasks_blueprint)
 
-        volunteer_interests = gapps.get_volunteer_interests()
-        skills_categories = gapps.get_skills_categories()
-
-        template_values = {
-            'FIELDS': config.FIELDS,
-            'csrf_token': csrf_token,
-            'volunteer_interests': volunteer_interests,
-            'skills_categories': skills_categories,
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('renew-member.jinja')
-
-        helpers.set_csrf_cookie(self.response, csrf_token)
-        self.response.write(template.render(template_values))
-
-    def post(self):
-        helpers.check_csrf(self.request)
-
-        user = users.get_current_user()
-        if not user or not gapps.is_user_authorized(user):
-            detail = 'user not authorized' if user else 'user not logged in'
-            webapp2.abort(401, detail=detail)
-
-        renew_member = gapps.member_dict_from_request(self.request,
-                                                      'useremail@example.com', # DEMO: user.email(),
-                                                      'renew')
-        gapps.renew_member_from_dict(renew_member)
-
-        self.response.write('success')
-
-        # Queue the welcome email
-        #taskqueue.add(url='/tasks/renew-member-mail', params=renew_member) # DEMO: disable emails
-
-
-class BadUserPage(helpers.BaseHandler):
-
-    def get(self):
-        user = users.get_current_user()
-        if not user:
-            self.redirect('/')
-            return
-
-        template_values = {
-            'user': user,
-            'logout_url': users.create_logout_url('/'),
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('bad-user.jinja')
-        self.response.write(template.render(template_values))
-
-
-class AllMembersJson(helpers.BaseHandler):
-
-    # @login_required -- Not using this decorator, since this isn't a web page.
-    # Instead we'll check login state in logic and return an error code.
-    def get(self):
-        user = users.get_current_user()
-        if not user or not gapps.is_user_authorized(user):
-            detail = 'user not authorized' if user else 'user not logged in'
-            webapp2.abort(401, detail=detail)
-
-        all_members = gapps.get_all_members()
-        fields = config.fields_to_dict(config.MEMBER_FIELDS)
-        res = {'fields': fields, 'members': all_members}
-
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.write(webapp2_extras.json.encode(res))
-
-
-class AuthorizeUserPage(helpers.BaseHandler):
-
-    @login_required
-    def get(self):
-        user = users.get_current_user()
-        if not user:
-            self.redirect(users.create_login_url(self.request.uri))
-            return
-        elif not gapps.is_user_authorized(user):
-            self.redirect('/bad-user')
-            return
-
-        csrf_token = helpers.get_csrf_token(self.request)
-
-        template_values = {
-            'FIELDS': config.FIELDS,
-            'csrf_token': csrf_token,
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('authorize-user.jinja')
-
-        helpers.set_csrf_cookie(self.response, csrf_token)
-        self.response.write(template.render(template_values))
-
-    def post(self):
-        helpers.check_csrf(self.request)
-
-        user = users.get_current_user()
-        if not user or not gapps.is_user_authorized(user):
-            detail = 'user not authorized' if user else 'user not logged in'
-            webapp2.abort(401, detail=detail)
-
-        gapps.authorize_new_user(self.request, user)
-
-        self.response.write('success')
-
-
-class MapMembersPage(helpers.BaseHandler):
-
-    @login_required
-    def get(self):
-        user = users.get_current_user()
-        if not user:
-            self.redirect(users.create_login_url(self.request.uri))  # pylint: disable=E1101
-            return
-        elif not gapps.is_user_authorized(user):
-            self.redirect('/bad-user')
-            return
-
-        template_values = {
-            'config': config,
-        }
-        template = JINJA_ENVIRONMENT.get_template('map-members.jinja')
-
-        self.response.write(template.render(template_values))
-
-
-app = webapp2.WSGIApplication([  # pylint: disable=C0103
-    ('/', IndexPage),
-    ('/new-member', NewMemberPage),
-    ('/renew-member', RenewMemberPage),
-    ('/bad-user', BadUserPage),
-    ('/all-members-json', AllMembersJson),
-    ('/authorize-user', AuthorizeUserPage),
-    ('/map-members', MapMembersPage),
-], debug=config.DEBUG)
+from tasks import tasks as tasks_blueprint
+app.register_blueprint(tasks_blueprint)

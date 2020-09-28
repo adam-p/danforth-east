@@ -8,15 +8,16 @@
 {% block header %}{% endblock %}
 
 {% block content %}
+
 <div class="jumbotron">
   <h1>DECA Member Management</h1>
 
-  {% if user %}
+  {% if current_user.is_authenticated %}
     <p>
-      Welcome, {{ user.email() }}.
+      Welcome, {{ current_user.id }}.
     </p>
     <p>
-      (Not the right account? <a href="{{ logout_url|safe }}">Sign out.</a>)
+      (Not the right account? <a href="/logout">Sign out.</a>)
     </p>
   {% else %}
     <p>
@@ -24,7 +25,7 @@
     </p>
   {% endif %}
 
-  <!-- DEMO -->
+  {% if app_config.DEMO %}
     <div class="bg-warning">
       <strong>Demo notes:</strong>
       <ul>
@@ -32,7 +33,7 @@
           Github project: <a href="https://github.com/adam-p/danforth-east">https://github.com/adam-p/danforth-east</a>
         </li>
         <li>
-          Also check out the <strong><a href="https://s3.amazonaws.com/mmbrmgmt/iframe-test-custom.html">self-serve registration form</a></strong>, which would be embedded in the organization website.
+          Also check out the <strong><a href="https://mmbrmgmt.s3.amazonaws.com/iframe-test-custom.html">self-serve registration form</a></strong>, which would be embedded in the organization website.
         </li>
         <li>
           You must be logged in with a Google account to try this demo, but your email address doesn't have to be in the "Authorization" spreadsheet.
@@ -44,19 +45,19 @@
           The spreadsheets that function as the "database" for this demo are:
           <ul>
             <li>
-              <a href="https://docs.google.com/spreadsheets/d/1CEC4cAoA4SoVZQ-trkFzy6Mi5tL42vuyWyMIts3hMQ8/edit?usp=sharing">Members</a> (cleared out periodically for demo)
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.MEMBERS_SPREADSHEET_ID }}/edit?usp=sharing">Members</a> (cleared out periodically for demo)
             </li>
             <li>
-              <a href="https://docs.google.com/spreadsheets/d/1BZLJtMlzg1E1WGIDCEEmWFJoUTg3fdZquXaqa7-Vf4E/edit?usp=sharing">Volunteers</a> (cleared out periodically for demo)
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.VOLUNTEERS_SPREADSHEET_ID }}/edit?usp=sharing">Volunteers</a> (cleared out periodically for demo)
             </li>
             <li>
-              <a href="https://docs.google.com/spreadsheets/d/1NRMFHCF_9dEyizfdO2vxWXUNojLYNVc5uwFOGCHp6iA/edit?usp=sharing">Volunteer Interest Areas</a>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.VOLUNTEER_INTERESTS_SPREADSHEET_ID }}?usp=sharing">Volunteer Interest Areas</a>
             </li>
             <li>
-              <a href="https://docs.google.com/spreadsheets/d/1hLNeUZA7v9K5608HF-B_jMa0VFmLo8OpHi3Js-YAeao/edit?usp=sharing">Skills Categories</a>
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.SKILLS_CATEGORIES_SPREADSHEET_ID }}-YAeao/edit?usp=sharing">Skills Categories</a>
             </li>
             <li>
-              <a href="https://docs.google.com/spreadsheets/d/19eGfHsDx70tHcufLNmA3lXW4KcWTMZPDIccNnLlTYfw/edit?usp=sharing">Authorized Users</a> (not used in demo)
+              <a href="https://docs.google.com/spreadsheets/d/{{ app_config.AUTHORIZED_SPREADSHEET_ID }}?usp=sharing">Authorized Users</a> (not used in demo)
             </li>
           </ul>
         </li>
@@ -68,7 +69,7 @@
         </li>
       </ul>
     </div>
-    <!-- /DEMO -->
+  {% endif %}
 
   <hr>
 
