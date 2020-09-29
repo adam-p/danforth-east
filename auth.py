@@ -25,6 +25,10 @@ login_manager = flask_login.LoginManager()
 login_manager.init_app(main.app)
 
 
+if not config.DEBUG:
+    logging.getLogger('google.auth').setLevel(logging.INFO)
+
+
 auth = flask.Blueprint('auth', __name__)
 
 auth.before_request(main.additional_csrf_checks)
