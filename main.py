@@ -20,6 +20,7 @@ import emailer
 
 app = flask.Flask(__name__)
 app.secret_key = config.FLASK_SECRET_KEY
+# If log volume ever becomes a problem (which it won't), raise this level if not DEBUG
 logging.basicConfig(level=logging.DEBUG)
 if config.DEBUG:
     app.debug = True

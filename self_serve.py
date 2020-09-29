@@ -337,6 +337,7 @@ def process_member_worker():
     logging.debug('self_serve.process_member_worker hit')
 
     params = gapps.validate_queue_task(flask.request)
+    logging.debug('self_serve.process_member_worker params: %s', params)
 
     payer_email = params.get('payer_email', '')
     payer_id = params.get('payer_id', '')
@@ -384,10 +385,14 @@ def process_member_worker():
         # value in either the "Paypal Email" field or the "Email" field.
         #
 
-        renew_success = gapps.renew_member_by_email_or_paypal_id(
-                                payer_email,
-                                payer_id,
-                                member_dict)
+        if not payer_email and not payer_id:
+            logging.warning('self_serve.process_member_worker: payer_email and payer_id empty')
+            renew_success = False
+        else:
+            renew_success = gapps.renew_member_by_email_or_paypal_id(
+                                    payer_email,
+                                    payer_id,
+                                    member_dict)
 
         if not renew_success:
             # We failed to renew this paying member.

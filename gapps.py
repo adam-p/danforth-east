@@ -233,8 +233,19 @@ def renew_member_by_email_or_paypal_id(email: str, paypal_payer_id: str, member_
     ID field for `paypal_payer_id`. Updates member entry from `member_dict`.
     Returns True if the member was found and renewed.
     """
-    row = sheetdata.Row.find(_S.member,
-        lambda d: d[_S.member.fields.paypal_payer_id.name] == paypal_payer_id or d[_S.member.fields.email.name] == email or d[_S.member.fields.paypal_email.name] == email)
+
+    if not email and not paypal_payer_id:
+        logging.warning('gapps.renew_member_by_email_or_paypal_id: email and paypal_payer_id empty')
+        return False
+
+    def matcher(d):
+        if paypal_payer_id and (d[_S.member.fields.paypal_payer_id.name] == paypal_payer_id):
+            return True
+        if email and (d[_S.member.fields.email.name] == email) or (d[_S.member.fields.paypal_email.name] == email):
+            return True
+        return False
+
+    row = sheetdata.Row.find(_S.member, matcher)
 
     if not row:
         return False
