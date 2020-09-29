@@ -478,13 +478,13 @@ def enqueue_task(url: str, params: dict):
     client = tasks_v2.CloudTasksClient()
     parent = client.queue_path(config.PROJECT_NAME, config.PROJECT_REGION, config.TASK_QUEUE_NAME)
 
-    task = {
-        'app_engine_http_request': {
-            'http_method': tasks_v2.HttpMethod.POST
-        }
-    }
-    task['app_engine_http_request']['relative_uri'] = f'{url}?{_TASK_QUEUE_SECRET_PARAM}={config.FLASK_SECRET_KEY}'
-    task['app_engine_http_request']['body'] = flask.json.dumps(params).encode()
+    task = tasks_v2.Task()
+    task.app_engine_http_request = tasks_v2.AppEngineHttpRequest()
+    task.app_engine_http_request.http_method = tasks_v2.HttpMethod.POST
+    task.app_engine_http_request.relative_uri = f'{url}?{_TASK_QUEUE_SECRET_PARAM}={config.FLASK_SECRET_KEY}'
+    task.app_engine_http_request.body = flask.json.dumps(params).encode()
+    task.app_engine_http_request.app_engine_routing = tasks_v2.AppEngineRouting()
+    task.app_engine_http_request.app_engine_routing.version = os.getenv('GAE_VERSION')
 
     response = client.create_task(parent=parent, task=task)
     logging.info(f'enqueued task to {url}')
