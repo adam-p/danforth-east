@@ -80,8 +80,9 @@ def send_to_admins(subject: str, body_text: str) -> bool:
                 subject, None, body_text)
 
 
+# WARNING: Untested.
 class SendgridHandler(logging.StreamHandler):
-    app_id = os.getenv('APPLICATION_ID')
+    app_id = os.getenv('GAE_APPLICATION')
 
     def emit(self, record):
         if record.level < logging.ERROR:
