@@ -96,6 +96,11 @@ This is the flow, mostly as it regards Paypal subscriptions:
 
 self_serve = flask.Blueprint('self_serve', __name__)
 
+# TODO: Flask-WTF CSRF check is sometimes failing, even though the form field and the
+# header are obviously present. I'm going to disable that check and leave the additional
+# checks in place.
+main.csrf.exempt(self_serve)
+
 self_serve.before_request(main.additional_csrf_checks)
 
 # This will be set by the JavaScript in common.js
