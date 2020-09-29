@@ -1,5 +1,8 @@
 runtime: python38
 
+# This is higher than default (F1), but the default is slow and memory-constrained
+instance_class: F4
+
 automatic_scaling:
   max_instances: 2
 
