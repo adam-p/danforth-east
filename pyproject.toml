@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "danforth-east-demo"
+name = "danforth-east"
 version = "2.0.0"
 description = ""
 authors = ["Adam Pritchard <pritchard.adam@gmail.com>"]

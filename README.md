@@ -375,6 +375,25 @@ Rather than making this README longer than it already is, I'm going to document 
 Future work
 -----------
 
+### High priority
+
+* Sendgrid email seems to be getting spam-binned almost always. We either need to:
+  - fix that (verify domain instead of Gmail address?)
+  - show the user a message at registration time about checking their "spam folder"
+  - get a new email provider (SES?)
+
+* Self-serve join form takes a long time to load. Show a wait indicator/message.
+
+* Post-self-serve-join modal is near the top, but the user is looking at the bottom of the form when they submit. Either:
+  - Scroll up
+  - Show the modal in the current viewport
+  - Collapse the iframe contents
+
+* Handle 500 errors better. Two ways:
+  - Retry XHR on 500
+  - Have a check server-side to ensure multiple welcome emails aren't sent if the retry causes two successful saves (which happens, for some baffling reason)
+  - ... maybe 500s happen less often with the increased instance size?
+
 ### Features
 
 * Add captcha to self-serve form (or at least to the pay-later option).

@@ -233,8 +233,19 @@ def renew_member_by_email_or_paypal_id(email: str, paypal_payer_id: str, member_
     ID field for `paypal_payer_id`. Updates member entry from `member_dict`.
     Returns True if the member was found and renewed.
     """
-    row = sheetdata.Row.find(_S.member,
-        lambda d: d[_S.member.fields.paypal_payer_id.name] == paypal_payer_id or d[_S.member.fields.email.name] == email or d[_S.member.fields.paypal_email.name] == email)
+
+    if not email and not paypal_payer_id:
+        logging.warning('gapps.renew_member_by_email_or_paypal_id: email and paypal_payer_id empty')
+        return False
+
+    def matcher(d):
+        if paypal_payer_id and (d[_S.member.fields.paypal_payer_id.name] == paypal_payer_id):
+            return True
+        if email and (d[_S.member.fields.email.name] == email) or (d[_S.member.fields.paypal_email.name] == email):
+            return True
+        return False
+
+    row = sheetdata.Row.find(_S.member, matcher)
 
     if not row:
         return False
@@ -478,13 +489,13 @@ def enqueue_task(url: str, params: dict):
     client = tasks_v2.CloudTasksClient()
     parent = client.queue_path(config.PROJECT_NAME, config.PROJECT_REGION, config.TASK_QUEUE_NAME)
 
-    task = {
-        'app_engine_http_request': {
-            'http_method': tasks_v2.HttpMethod.POST
-        }
-    }
-    task['app_engine_http_request']['relative_uri'] = f'{url}?{_TASK_QUEUE_SECRET_PARAM}={config.FLASK_SECRET_KEY}'
-    task['app_engine_http_request']['body'] = flask.json.dumps(params).encode()
+    task = tasks_v2.Task()
+    task.app_engine_http_request = tasks_v2.AppEngineHttpRequest()
+    task.app_engine_http_request.http_method = tasks_v2.HttpMethod.POST
+    task.app_engine_http_request.relative_uri = f'{url}?{_TASK_QUEUE_SECRET_PARAM}={config.FLASK_SECRET_KEY}'
+    task.app_engine_http_request.body = flask.json.dumps(params).encode()
+    task.app_engine_http_request.app_engine_routing = tasks_v2.AppEngineRouting()
+    task.app_engine_http_request.app_engine_routing.version = os.getenv('GAE_VERSION')
 
     response = client.create_task(parent=parent, task=task)
     logging.info(f'enqueued task to {url}')

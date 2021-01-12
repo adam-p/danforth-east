@@ -15,26 +15,26 @@ import config
 import sheetdata
 
 if __name__ == "__main__":
-    member_props = sheetdata.get_first_sheet_properties(config.SHEETS.member.id)
+    member_props = sheetdata.get_first_sheet_properties(config.SHEETS.member.spreadsheet_id)
     print(f"MEMBERS_WORKSHEET_TITLE = '{member_props['title']}'")
-    print(f"MEMBERS_WORKSHEET_ID = {member_props['id']}")
+    print(f"MEMBERS_WORKSHEET_ID = {member_props['sheetId']}")
     print('')
 
-    authorized_props = sheetdata.get_first_sheet_properties(config.SHEETS.authorized.id)
+    authorized_props = sheetdata.get_first_sheet_properties(config.SHEETS.authorized.spreadsheet_id)
     print(f"AUTHORIZED_WORKSHEET_TITLE = '{authorized_props['title']}'")
-    print(f"AUTHORIZED_WORKSHEET_ID = {authorized_props['id']}")
+    print(f"AUTHORIZED_WORKSHEET_ID = {authorized_props['sheetId']}")
     print('')
 
-    volunteer_interest_props = sheetdata.get_first_sheet_properties(config.SHEETS.volunteer_interest.id)
+    volunteer_interest_props = sheetdata.get_first_sheet_properties(config.SHEETS.volunteer_interest.spreadsheet_id)
     print(f"VOLUNTEER_INTERESTS_WORKSHEET_TITLE = '{volunteer_interest_props['title']}'")
-    print(f"VOLUNTEER_INTERESTS_WORKSHEET_ID = {volunteer_interest_props['id']}")
+    print(f"VOLUNTEER_INTERESTS_WORKSHEET_ID = {volunteer_interest_props['sheetId']}")
     print('')
 
-    volunteer_props = sheetdata.get_first_sheet_properties(config.SHEETS.volunteer.id)
+    volunteer_props = sheetdata.get_first_sheet_properties(config.SHEETS.volunteer.spreadsheet_id)
     print(f"VOLUNTEERS_WORKSHEET_TITLE = '{volunteer_props['title']}'")
-    print(f"VOLUNTEERS_WORKSHEET_ID = {volunteer_props['id']}")
+    print(f"VOLUNTEERS_WORKSHEET_ID = {volunteer_props['sheetId']}")
     print('')
 
-    skills_category_props = sheetdata.get_first_sheet_properties(config.SHEETS.skills_category.id)
+    skills_category_props = sheetdata.get_first_sheet_properties(config.SHEETS.skills_category.spreadsheet_id)
     print(f"SKILLS_CATEGORIES_WORKSHEET_TITLE = '{skills_category_props['title']}'")
-    print(f"SKILLS_CATEGORIES_WORKSHEET_ID = {skills_category_props['id']}")
+    print(f"SKILLS_CATEGORIES_WORKSHEET_ID = {skills_category_props['sheetId']}")
