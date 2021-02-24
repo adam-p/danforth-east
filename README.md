@@ -228,7 +228,7 @@ MailChimp integration can be disabled by setting `MAILCHIMP_ENABLED` to `False` 
 
 ### Sendgrid
 
-TODO
+The API key can have restricted permissions: read-only email sending only. Set it in `private.py` as `SENDGRID_API_KEY`.
 
 
 ### Deploy to App Engine

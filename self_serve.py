@@ -341,6 +341,7 @@ def process_member_worker():
 
     payer_email = params.get('payer_email', '')
     payer_id = params.get('payer_id', '')
+    paid_amount = params.get('mc_gross', '')
     payer_name = ''
     if params.get('first_name') and params.get('last_name'):
         payer_name = f"{params.get('first_name')} {params.get('last_name')}"
@@ -373,6 +374,7 @@ def process_member_worker():
     member_dict[config.SHEETS.member.fields.paypal_name.name] = payer_name
     member_dict[config.SHEETS.member.fields.paypal_email.name] = payer_email
     member_dict[config.SHEETS.member.fields.paypal_payer_id.name] = payer_id
+    member_dict[config.SHEETS.member.fields.paid_amount.name] = paid_amount
 
     join_or_renew = 'renew'
 
@@ -479,7 +481,7 @@ def paypal_ipn():
 
     # Check if this is a membership payment. We want to ignore any other kind of payment.
     if flask.request.values.get('item_name') != config.PAYPAL_TXN_item_name:
-        logging.info('self_serve_tasks.paypal_ipn: rejecting IPN with item_name: %s; %s',
+        logging.info('self_serve_tasks.paypal_ipn: rejecting IPN with item_name: "%s"; %s',
                      flask.request.values.get('item_name'), list(flask.request.values.items()))
         return flask.make_response('', 200)
 

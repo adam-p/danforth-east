@@ -3,17 +3,26 @@
  * MIT License : https: //adampritchard.mit-license.org/
  */
 
-.submit-btns table {
-  width: 100%;
+.paypal-button {
+  background: #ffc439;
+  border-radius: 4px;
+  padding: 15px;
+  max-width: 300px;
+  margin: 20px auto;
 }
 
-.submit-btns td {
-  width: 50%;
-  padding: 5px;
+.paypal-button:hover {
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 0px 5px;
+  cursor: pointer;
 }
 
-.submit-btns .payment-intro {
-  font-size: 1.4em;
+.paypal-button__cctext {
+  color: white;
+  font-size: 18px;
+}
+
+.paypal-button__cctext > img {
+  vertical-align: text-top;
 }
 
 /* We need to reset some of the Bootstrap styles. */

@@ -95,6 +95,7 @@ $(function() {
   };
   $(window).on('message', messageFromParent);
 
-  $('#newMember [name="submit"][value="paypal"]').click(submitClick);
-  $('#newMember [name="submit"][value="cheque"]').click(submitClick);
+  $('#newMember .paypal-button').click(submitClick);
+  // We used to support submitting the form with a promise to pay later by cheque
+  //$('#newMember [name="submit"][value="cheque"]').click(submitClick);
 });

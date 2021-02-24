@@ -24,6 +24,12 @@ DEBUG = False
 # It prevents auth checks and doesn't send email.
 DEMO = False
 
+try:
+    import overrides
+    DEMO = overrides.DEMO
+except:
+    pass
+
 #
 # Project config and environment
 #
@@ -33,7 +39,7 @@ PROJECT_NAME = os.getenv('GOOGLE_CLOUD_PROJECT')
 # https://cloud.google.com/compute/docs/regions-zones#locations
 PROJECT_REGION = 'us-central1'
 
-# This needs to have been created with `gcloud tasks queue create {name}`.
+# This needs to have been created with `gcloud tasks queues create {name}`.
 # (AFAIK, the name isn't important, so you don't actually need to change it.)
 TASK_QUEUE_NAME = 'mmbrmgmt-task-queue'
 
@@ -165,6 +171,7 @@ MEMBER_SHEET = Spreadsheet(MEMBERS_SPREADSHEET_ID,
                                 'paypal_email',
                                 'paypal_payer_id',
                                 'paypal_auto_renewing',
+                                'paid_amount',
                                 'mailchimp_updated',
                             ])(
     Field('ID', is_id=True, validator=lambda *args: True, form_field=True, mutable=False),
@@ -195,6 +202,7 @@ MEMBER_SHEET = Spreadsheet(MEMBERS_SPREADSHEET_ID,
     Field('Paypal Email', form_field=False),
     Field('Paypal Payer ID', form_field=False),
     Field('Paypal Auto-Renewing', form_field=False),
+    Field('Paid Amount', form_field=False),
     Field('MailChimp Updated', form_field=False),
 ))
 

@@ -8,6 +8,8 @@
 """Configuration values that we don't want to check into (public) source control.
 """
 
+import urllib.parse
+
 #
 # Project config and environment
 #
@@ -23,17 +25,6 @@ SELF_SERVE_ALLOWED_EMBED_ORIGINS = ['https://actual-community-association-site.c
 MASTER_EMAIL_ADDRESS = 'your-gmail-account@gmail.com'
 MASTER_EMAIL_SEND_NAME = 'Your Neighbourhood Community Association'
 MASTER_EMAIL_SEND_ADDRESS = f'{MASTER_EMAIL_SEND_NAME} <{MASTER_EMAIL_ADDRESS}>'
-
-ORGANIZATION_MAILING_ADDRESS_HTML = '''
-    Org Name<br>
-    99 Street Ave<br>
-    Toronto, ON H0H 0H0
-    '''
-
-ORGANIZATION_CHEQUES_PAYABLE_NAME = 'Org Full Name'
-
-MEMBERSHIP_FEE_DISPLAY = '$10'
-MEMBERSHIP_FEE_FLOAT = 10.00
 
 
 #
@@ -60,6 +51,10 @@ FLASK_SECRET_KEY = 'some very large random secret'
 # Payment and PayPal info
 #
 
+# When testing, this will probably be "youremail-facilitator@gmail.com"
+PAYPAL_TXN_receiver_email = 'youremail@gmail.com'
+PAYPAL_TXN_item_name = 'DECA Membership - 1 year'
+
 # This is the URL that we'll send the user to so they can pay.
 # You get this URL when you use the PayPal web interface to create a payment
 # button. (We don't actually use the button <form>.)
@@ -67,11 +62,8 @@ FLASK_SECRET_KEY = 'some very large random secret'
 # NOTE: Hosted buttons don't seem to be what you get anymore when creating a button, so
 # this will have to change.
 PAYPAL_PAYMENT_URL = 'https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ABC123'
+PAYPAL_PAYMENT_URL += f"&{urllib.parse.urlencode({'item_name': PAYPAL_TXN_item_name})}"
 PAYPAL_PAYMENT_URL += '&invoice=%s'
-# When testing, this will probably be "youremail-facilitator@gmail.com"
-PAYPAL_TXN_receiver_email = 'youremail@gmail.com'
-# This is set in the PayPal button configuration
-PAYPAL_TXN_item_name = 'DECA Membership - 1 year'
 
 
 #
