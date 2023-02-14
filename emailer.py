@@ -6,22 +6,25 @@
 #
 
 """
-Functions for sending email. Uses Sendgrid.
-
-This file is named "emailer" rather than "email" because that name causes the sendgrid
-library to fail. See https://github.com/sendgrid/sendgrid-python/issues/586
+Functions for sending email. Uses SMTP.
 """
 
-from typing import Tuple, Optional, Union
-import os
-import logging
-import config
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, From, To, Subject, PlainTextContent, HtmlContent, SendGridException
+import smtplib
+import ssl
+from email.message import EmailMessage
+from email.headerregistry import Address
+
 import html2text
+import logging
+from typing import Optional, Tuple, Union
+import config
 
 
-def send(recipients: Union[Tuple[Tuple[str, str]], Tuple[str, str]], subject: str, body_html: Optional[str], body_text: str) -> bool:
+def send(
+        recipients: Union[Tuple[Tuple[str, str]], Tuple[str, str]],
+        subject: str,
+        body_html: Optional[str],
+        body_text: str) -> bool:
     """Send an email from the configured address.
     `recipients` is a list of tuples like `[(address, name),...]` or just a single
     tuple like `(address, name)`.
@@ -49,46 +52,32 @@ def send(recipients: Union[Tuple[Tuple[str, str]], Tuple[str, str]], subject: st
         h2t.body_width = 0
         body_text = h2t.handle(body_html)
 
-    sg = SendGridAPIClient(api_key=config.SENDGRID_API_KEY)
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = str(Address(display_name=config.MASTER_EMAIL_SEND_NAME, addr_spec=config.MASTER_EMAIL_ADDRESS))
+    msg['To'] = ', '.join([str(Address(display_name=r[1], addr_spec=r[0])) for r in recipients])
 
-    to = []
-    for r in recipients:
-        to.append(To(r[0], r[1]))
+    msg.set_content(body_text)
+    if body_html:
+        msg.add_alternative(body_html, subtype='html')
 
-    message = Mail(from_email=From(config.MASTER_EMAIL_SEND_ADDRESS, name=config.MASTER_EMAIL_SEND_NAME),
-                   to_emails=to,
-                   subject=Subject(subject),
-                   plain_text_content=PlainTextContent(body_text),
-                   html_content=HtmlContent(body_html) if body_html else None)
-
-    response = sg.client.mail.send.post(request_body=message.get())
-
-    if response.status_code not in (200, 202):
-        # The expected response code is actually 202, but not checking for 200 as well feels weird.
-        logging.error(f"emailer.send fail: {response.status_code} | {response.body} | {response.headers}")
+    context = ssl.create_default_context()
+    try:
+        # Note that using SMTP_SSL here, rather than SMTP+starttls, results in an error: `ssl.SSLError: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1131)`
+        with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as server:
+            server.starttls(context=context)
+            server.login(config.MASTER_EMAIL_ADDRESS, config.SMTP_PASSWORD)
+            server.send_message(msg)
+    except Exception as e:
+        logging.error(f"emailer.send fail: {e}")
         return False
 
-    # Body is expected to be empty on success, but we'll check it anyway.
-    logging.info(f"emailer.send success: {response.status_code} | {response.body}")
+    logging.info(f"emailer.send success")
     return True
 
 
 def send_to_admins(subject: str, body_text: str) -> bool:
     """Send an email to the configured admin(s).
     """
-    return send((config.MASTER_EMAIL_SEND_ADDRESS, config.MASTER_EMAIL_SEND_NAME),
+    return send((config.MASTER_EMAIL_ADDRESS, config.MASTER_EMAIL_SEND_NAME),
                 subject, None, body_text)
-
-
-# WARNING: Untested.
-class SendgridHandler(logging.StreamHandler):
-    app_id = os.getenv('GAE_APPLICATION')
-
-    def emit(self, record):
-        if record.level < logging.ERROR:
-            return
-
-        msg = self.format(record)
-        send_to_admins(
-            f'{self.app_id} ERROR',
-            msg)
