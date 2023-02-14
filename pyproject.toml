@@ -8,7 +8,6 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 flask = "^1.1.2"
-sendgrid = "^6.4.6"
 python-dateutil = "^2.8.1"
 flask-login = "^0.5.0"
 google-auth = "^1.21.1"

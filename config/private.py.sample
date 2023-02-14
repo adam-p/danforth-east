@@ -22,9 +22,9 @@ SELF_SERVE_ALLOWED_EMBED_ORIGINS = ['https://actual-community-association-site.c
 # Organization info
 #
 
+# This must be the address used for sending email
 MASTER_EMAIL_ADDRESS = 'your-gmail-account@gmail.com'
 MASTER_EMAIL_SEND_NAME = 'Your Neighbourhood Community Association'
-MASTER_EMAIL_SEND_ADDRESS = f'{MASTER_EMAIL_SEND_NAME} <{MASTER_EMAIL_ADDRESS}>'
 
 
 #
@@ -67,6 +67,16 @@ PAYPAL_PAYMENT_URL += '&invoice=%s'
 
 
 #
+# Email info
+#
+
+SMTP_HOST = 'smtp.gmail.com'
+SMTP_PORT = 587
+SMTP_PASSWORD = 'abc123'
+# The associated email address must be MASTER_EMAIL_ADDRESS
+
+
+#
 # MailChimp info
 #
 
@@ -77,13 +87,6 @@ MAILCHIMP_MEMBERS_LIST_ID = 'abc123'
 MAILCHIMP_MEMBER_TYPE_MERGE_TAG = 'MMBR_TYPE'
 MAILCHIMP_MEMBER_TYPE_MEMBER = 'Member'
 MAILCHIMP_MEMBER_TYPE_VOLUNTEER = 'Volunteer'
-
-
-#
-# Sendgrid info
-#
-
-SENDGRID_API_KEY = 'SG.abcd1234'
 
 
 #

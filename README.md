@@ -1,7 +1,7 @@
 Neighbourhood Community Association Membership Management
 =========================================================
 
-Sales Pitch
+Elevator Pitch
 -----------
 
 Have you agreed to help a local organization register, renew, and keep track of members -- and then realized it's more work than you expected? Me too! This system can be run for free on Google App Engine and uses Google Spreadsheets as its database. It's easy for organization managers and members, mostly self-maintaining (for your sanity), and pretty flexible and powerful (for when you inevitably get asked to add new features).
@@ -375,24 +375,7 @@ Rather than making this README longer than it already is, I'm going to document 
 Future work
 -----------
 
-### High priority
-
-* Sendgrid email seems to be getting spam-binned almost always. We either need to:
-  - fix that (verify domain instead of Gmail address?)
-  - show the user a message at registration time about checking their "spam folder"
-  - get a new email provider (SES?)
-
-* Self-serve join form takes a long time to load. Show a wait indicator/message.
-
-* Post-self-serve-join modal is near the top, but the user is looking at the bottom of the form when they submit. Either:
-  - Scroll up
-  - Show the modal in the current viewport
-  - Collapse the iframe contents
-
-* Handle 500 errors better. Two ways:
-  - Retry XHR on 500
-  - Have a check server-side to ensure multiple welcome emails aren't sent if the retry causes two successful saves (which happens, for some baffling reason)
-  - ... maybe 500s happen less often with the increased instance size?
+See the [issues list](https://github.com/adam-p/danforth-east/issues).
 
 ### Features
 
