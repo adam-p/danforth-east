@@ -1,4 +1,4 @@
-runtime: python38
+runtime: python312
 
 # This is higher than default (F1), but the default is slow and memory-constrained
 instance_class: F4
