@@ -49,7 +49,8 @@ def new_member_mail():
 
     body_html = flask.render_template(
         'tasks/email-new-member.jinja',
-        app_config=config)
+        app_config=config,
+        member_first_name=member_dict[config.SHEETS.member.fields.first_name.name])
 
     if not emailer.send((member_email, member_name), subject, body_html, None):
         # Log and carry on
@@ -67,7 +68,8 @@ def new_member_mail():
         subject = flask.render_template(
             'tasks/email-volunteer-interest-rep-subject.jinja',
             app_config=config,
-            join_type='member').strip()
+            join_type='member',
+            member_first_name=member_dict[config.SHEETS.member.fields.first_name.name]).strip()
 
         for interest, reps in interest_reps.items():
             body_html = flask.render_template(
@@ -116,7 +118,8 @@ def renew_member_mail():
 
     body_html = flask.render_template(
         'tasks/email-renew-member.jinja',
-        app_config=config)
+        app_config=config,
+        member_first_name=member_dict[config.SHEETS.member.fields.first_name.name])
 
     if not emailer.send((member_email, member_name), subject, body_html, None):
         # Log and carry on
@@ -152,7 +155,8 @@ def new_volunteer_mail():
 
     body_html = flask.render_template(
         'tasks/email-new-volunteer.jinja',
-        app_config=config)
+        app_config=config,
+        volunteer_first_name=volunteer_dict[config.SHEETS.volunteer.fields.first_name.name])
 
     if not emailer.send((volunteer_email, volunteer_name), subject, body_html, None):
         # Log and carry on
