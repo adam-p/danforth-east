@@ -16,8 +16,6 @@ import logging
 import dateutil.parser
 import dateutil.tz
 
-import config
-
 
 def basic_validator(val, required):
     if required and not val:
@@ -70,6 +68,7 @@ def latlong_validator(val, required):
 def current_datetime():
     """Returns string of current datetime.
     """
+    import config  # deferred to avoid circular import (config imports utils at class-definition time)
     # We only want the date and not the time (and it needs to be tz-aware).
     return datetime.datetime.now(dateutil.tz.gettz(config.TIMEZONE)).strftime('%Y-%m-%d')
 
